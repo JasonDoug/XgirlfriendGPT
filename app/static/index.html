@@ -185,6 +185,10 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <label class="text-xs text-slate-300 flex items-center gap-1.5 cursor-pointer bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-slate-700 transition" title="Fast Mode: Responds immediately with text; audio & images render on-demand when clicked.">
+                        <input id="toggleFastMode" type="checkbox" class="rounded bg-slate-950 border-slate-700 text-indigo-500 focus:ring-0 cursor-pointer">
+                        <span class="font-semibold text-indigo-400">⚡ Fast Chat Mode</span>
+                    </label>
                     <label class="text-xs text-slate-300 flex items-center gap-1 cursor-pointer">
                         <input id="toggleMemory" type="checkbox" checked class="rounded bg-slate-900 border-slate-700 text-indigo-500 focus:ring-0"> Vector Memory
                     </label>
@@ -228,28 +232,60 @@
             const actionBar = document.createElement("div");
             actionBar.className = "flex items-center flex-wrap gap-2 pt-1 border-t border-slate-800/80 mt-1";
 
-            // 1. Inline Voice Listen Button (if audioUrl exists)
-            if (audioUrl) {
-                const playBtn = document.createElement("button");
-                playBtn.type = "button";
-                playBtn.className = "inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-500/40 transition cursor-pointer";
-                playBtn.innerHTML = "<span>🔊</span> Listen";
+            // 1. Inline Voice Listen Button (Pre-synthesized or On-Demand Synthesis)
+            const playBtn = document.createElement("button");
+            playBtn.type = "button";
+            playBtn.className = "inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-500/40 transition cursor-pointer";
+            playBtn.innerHTML = "<span>🔊</span> Listen";
 
-                const audio = new Audio(audioUrl);
-                playBtn.onclick = () => {
-                    if (audio.paused) {
-                        audio.play();
-                        playBtn.innerHTML = "<span>⏸️</span> Pause";
-                    } else {
-                        audio.pause();
+            let activeAudioUrl = audioUrl;
+            let currentAudioObj = activeAudioUrl ? new Audio(activeAudioUrl) : null;
+
+            playBtn.onclick = async () => {
+                if (!activeAudioUrl) {
+                    // Trigger on-demand voice synthesis for this turn
+                    playBtn.innerHTML = "<span>🔊</span> Synthesizing...";
+                    try {
+                        const synthResp = await fetch("/api/v1/voice/synthesize", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ text: content })
+                        });
+                        if (!synthResp.ok) throw new Error("Voice synthesis failed");
+                        const synthData = await synthResp.json();
+                        if (synthData.audio_url) {
+                            activeAudioUrl = synthData.audio_url;
+                            currentAudioObj = new Audio(activeAudioUrl);
+                            currentAudioObj.onended = () => {
+                                playBtn.innerHTML = "<span>🔊</span> Listen";
+                            };
+                            currentAudioObj.play();
+                            playBtn.innerHTML = "<span>⏸️</span> Pause";
+                        } else {
+                            playBtn.innerHTML = "<span>🔊</span> Listen";
+                        }
+                    } catch (err) {
+                        console.error("Audio synthesis error:", err);
                         playBtn.innerHTML = "<span>🔊</span> Listen";
                     }
-                };
-                audio.onended = () => {
-                    playBtn.innerHTML = "<span>🔊</span> Listen";
-                };
-                actionBar.appendChild(playBtn);
-            }
+                    return;
+                }
+
+                if (currentAudioObj) {
+                    if (currentAudioObj.paused) {
+                        currentAudioObj.play();
+                        playBtn.innerHTML = "<span>⏸️</span> Pause";
+                    } else {
+                        currentAudioObj.pause();
+                        playBtn.innerHTML = "<span>🔊</span> Listen";
+                    }
+                    currentAudioObj.onended = () => {
+                        playBtn.innerHTML = "<span>🔊</span> Listen";
+                    };
+                }
+            };
+            actionBar.appendChild(playBtn);
+
 
             // 2. Inline Photo Button & Embedded Container
             const photoBtn = document.createElement("button");
@@ -591,6 +627,7 @@
             msgsContainer.scrollTop = msgsContainer.scrollHeight;
 
             const enableMemory = document.getElementById("toggleMemory").checked;
+            const fastMode = document.getElementById("toggleFastMode") ? document.getElementById("toggleFastMode").checked : false;
 
             try {
                 const response = await fetch("/api/v1/chat/message", {
@@ -602,7 +639,8 @@
                         message: message,
                         history: chatHistory,
                         enable_memory: enableMemory,
-                        enable_vision: true
+                        enable_vision: true,
+                        fast_mode: fastMode
                     })
                 });
 

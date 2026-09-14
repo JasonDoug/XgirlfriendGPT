@@ -81,3 +81,24 @@ async def voice_websocket_stream(websocket: WebSocket):
                 
     except WebSocketDisconnect:
         logger.info("Voice WebSocket stream disconnected.")
+
+from pydantic import BaseModel
+from typing import Optional
+from fastapi import HTTPException
+
+class SynthesizeRequest(BaseModel):
+    text: str
+    voice_id: Optional[str] = None
+
+@router.post("/synthesize")
+def synthesize_speech(req: SynthesizeRequest):
+    """
+    On-Demand Voice TTS Synthesis Endpoint.
+    Synthesizes TTS audio MP3 for a given text payload.
+    """
+    if not req.text or not req.text.strip():
+        raise HTTPException(status_code=400, detail="Text payload is required")
+    
+    tts_res = VoiceService.synthesize_tts_chunk(req.text.strip())
+    return tts_res
+

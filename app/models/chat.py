@@ -14,6 +14,8 @@ class ChatRequest(BaseModel):
     history: Optional[List[Dict[str, str]]] = Field(default_factory=list, description="Recent conversation turns [{role, content}]")
     enable_memory: bool = True
     enable_vision: bool = True
+    fast_mode: bool = Field(default=False, description="If True, responds immediately with text without waiting for TTS or image rendering")
+
 
 class ImageGenCommand(BaseModel):
     generate_image: bool = True

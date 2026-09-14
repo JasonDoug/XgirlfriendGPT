@@ -78,3 +78,26 @@ def test_sms_webhook_endpoint():
     data = response.json()
     assert data["status"] == "success"
     assert "reply" in data
+
+def test_fast_mode_chat_and_on_demand_synthesis():
+    # 1. Test fast_mode chat turn (audio_url should be None for instant response)
+    chat_payload = {
+        "companion_id": "test_fast_comp",
+        "user_id": "user_fast_1",
+        "message": "Quick check-in!",
+        "enable_memory": False,
+        "fast_mode": True
+    }
+    resp = client.post("/api/v1/chat/message", json=chat_payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "reply" in data
+    assert data["audio_url"] is None
+
+    # 2. Test on-demand voice TTS synthesis endpoint
+    synth_payload = {"text": data["reply"]}
+    synth_resp = client.post("/api/v1/voice/synthesize", json=synth_payload)
+    assert synth_resp.status_code == 200
+    synth_data = synth_resp.json()
+    assert "audio_url" in synth_data
+

@@ -80,11 +80,15 @@ def send_chat_message(request: ChatRequest):
             current_speaker_id=request.companion_id
         )
 
+        if request.fast_mode:
+            # In Fast Mode, skip pre-rendering ComfyUI visual generation during chat turn
+            initial_state.should_generate_image = False
+
         final_state = companion_graph.invoke(initial_state)
 
         reply_text = final_state.get("reply") or "Hey there!"
-        image_url = final_state.get("image_url")
-        should_gen_image = final_state.get("should_generate_image", False)
+        image_url = final_state.get("image_url") if not request.fast_mode else None
+        should_gen_image = final_state.get("should_generate_image", False) if not request.fast_mode else False
         image_prompt = final_state.get("image_prompt", "")
 
         image_command = None
@@ -102,13 +106,15 @@ def send_chat_message(request: ChatRequest):
             detail=f"LangGraph Multi-Agent Error: {str(e)}"
         )
 
-    # Step 3: Synthesize Voice Audio MP3
+    # Step 3: Synthesize Voice Audio MP3 (Skip in fast_mode for instant text response)
     audio_url = None
-    try:
-        tts_res = VoiceService.synthesize_tts_chunk(reply_text)
-        audio_url = tts_res.get("audio_url")
-    except Exception as e:
-        logger.warning(f"Voice synthesis error: {e}")
+    if not request.fast_mode:
+        try:
+            tts_res = VoiceService.synthesize_tts_chunk(reply_text)
+            audio_url = tts_res.get("audio_url")
+        except Exception as e:
+            logger.warning(f"Voice synthesis error: {e}")
+
 
     # Step 4: Persist Chat History to Disk
     assistant_turn = {
