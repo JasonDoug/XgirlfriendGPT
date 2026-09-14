@@ -1,3 +1,4 @@
+import os
 import uuid
 import logging
 from typing import List, Dict, Any, Optional
@@ -26,19 +27,40 @@ class MemoryService:
     Long-Term Memory Management Service.
     Uses Qdrant vector database paired with fastembed ONNX embeddings
     so the companion remembers past interactions, shared jokes, and personal facts.
+    Uses connection pooling and singleton caching to prevent per-request connection overhead.
     """
+    _instance: Optional["MemoryService"] = None
+    _clients: Dict[str, QdrantClient] = {}
+
+    @classmethod
+    def get_instance(cls, host: Optional[str] = None, collection_name: Optional[str] = None) -> "MemoryService":
+        target_host = host or settings.QDRANT_HOST
+        target_collection = collection_name or settings.QDRANT_COLLECTION
+
+        if target_host == ":memory:":
+            return MemoryService(host=target_host, collection_name=target_collection)
+
+        if cls._instance is None:
+            cls._instance = MemoryService(host=target_host, collection_name=target_collection)
+        return cls._instance
 
     def __init__(self, host: Optional[str] = None, collection_name: Optional[str] = None):
         self.host = host or settings.QDRANT_HOST
         self.collection_name = collection_name or settings.QDRANT_COLLECTION
-        
-        if self.host == ":memory:":
-            self.client = QdrantClient(location=":memory:")
-        elif os.path.isabs(self.host) or self.host.startswith("."):
-            os.makedirs(self.host, exist_ok=True)
-            self.client = QdrantClient(path=self.host)
+
+        if self.host in MemoryService._clients:
+            self.client = MemoryService._clients[self.host]
         else:
-            self.client = QdrantClient(host=self.host, port=6333)
+            if self.host == ":memory:":
+                self.client = QdrantClient(location=":memory:")
+            elif os.path.isabs(self.host) or self.host.startswith("."):
+                os.makedirs(self.host, exist_ok=True)
+                self.client = QdrantClient(path=self.host)
+            else:
+                self.client = QdrantClient(host=self.host, port=6333)
+
+            if self.host != ":memory:":
+                MemoryService._clients[self.host] = self.client
 
         # Initialize vector collection if it doesn't exist
         try:

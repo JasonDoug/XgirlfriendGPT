@@ -224,7 +224,10 @@
 
     </div>
 
-    <script>
+    <script type="module">
+        import { API } from "/static/js/api.js";
+        window.API = API;
+
         let activeMode = "logs";
         let currentCompanionId = null;
         let currentCompanionName = "Companion";

@@ -7,7 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.config import settings
-from app.api import clone, chat, voice, sms, settings as settings_api, rooms
+from app.api import clone, chat, voice, sms, settings as settings_api, rooms, health, auth
+from app.middleware.observability import ObservabilityMiddleware
 from app.services.sms_service import SMSService
 
 logging.basicConfig(
@@ -33,6 +34,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Add Observability Middleware (Request Tracing & Metrics)
+app.add_middleware(ObservabilityMiddleware)
+
 # Configure CORS for Web / Mobile Clients
 app.add_middleware(
     CORSMiddleware,
@@ -47,7 +51,9 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Register API Routers for the 4 Pipelines + Multi-Persona Rooms
+# Register API Routers for Health, Auth, 4 Pipelines + Multi-Persona Rooms
+app.include_router(health.router)
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(clone.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
 app.include_router(rooms.router)
