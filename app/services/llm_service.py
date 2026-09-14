@@ -102,13 +102,14 @@ class LLMService:
         # Construct OpenAI-standard multi-turn message sequence
         messages = [{"role": "system", "content": system_prompt}]
         
-        # Append recent conversation turns
+        # Append recent conversation turns (sanitized to prevent context explosion)
         if history:
             for turn in history[-8:]:
                 role = turn.get("role", "user")
                 content = turn.get("content", "")
                 if role in ["user", "assistant"] and content:
-                    messages.append({"role": role, "content": content})
+                    clean_content = content[:1000].strip()
+                    messages.append({"role": role, "content": clean_content})
                     
         messages.append({"role": "user", "content": user_message})
 

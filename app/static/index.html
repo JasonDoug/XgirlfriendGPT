@@ -147,12 +147,22 @@
                 <!-- Trait Badges -->
                 <div class="grid grid-cols-2 gap-3 text-xs">
                     <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                        <span class="text-slate-400 block mb-1">Formality & Tone</span>
-                        <span id="traitFormality" class="font-semibold text-indigo-400 capitalize"></span>
+                        <label for="editFormalitySelect" class="text-slate-400 font-medium block mb-1">Formality & Style</label>
+                        <select id="editFormalitySelect" onchange="updateCompanionSettings()" class="bg-slate-950 border border-slate-700 text-indigo-400 font-semibold text-xs rounded-lg px-2.5 py-1.5 w-full focus:outline-none focus:border-indigo-500 cursor-pointer">
+                            <option value="casual">😎 Casual & Slang</option>
+                            <option value="formal">👔 Formal & Wise</option>
+                            <option value="witty & sarcastic">😜 Witty & Sarcastic</option>
+                            <option value="pirate & adventurous">🏴‍☠️ Pirate / Nautical</option>
+                            <option value="expressive & warm">✨ Expressive & Warm</option>
+                        </select>
                     </div>
                     <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                        <span class="text-slate-400 block mb-1">Response Length</span>
-                        <span id="traitLength" class="font-semibold text-pink-400 capitalize"></span>
+                        <label for="editLengthSelect" class="text-slate-400 font-medium block mb-1">Response Length</label>
+                        <select id="editLengthSelect" onchange="updateCompanionSettings()" class="bg-slate-950 border border-slate-700 text-pink-400 font-semibold text-xs rounded-lg px-2.5 py-1.5 w-full focus:outline-none focus:border-pink-500 cursor-pointer">
+                            <option value="short">⚡ Short & Concise</option>
+                            <option value="medium">⚖️ Medium / Balanced</option>
+                            <option value="verbose">📖 Detailed & Verbose</option>
+                        </select>
                     </div>
                     <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 col-span-2">
                         <span class="text-slate-400 block mb-1">Detected Slang Tokens</span>
@@ -506,12 +516,33 @@
             }
         }
 
+        function setSelectValue(selectEl, value) {
+            if (!value) return;
+            const lowerVal = value.toLowerCase().trim();
+            let found = false;
+            for (let opt of selectEl.options) {
+                if (opt.value.toLowerCase().trim() === lowerVal) {
+                    selectEl.value = opt.value;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                const newOpt = document.createElement("option");
+                newOpt.value = value;
+                newOpt.innerText = `⚙️ ${value}`;
+                selectEl.appendChild(newOpt);
+                selectEl.value = value;
+            }
+        }
+
         function renderProfilePanel(profile) {
             document.getElementById("profileContainer").classList.remove("hidden");
             document.getElementById("profileContainer").classList.add("flex");
             document.getElementById("companionIdBadge").innerText = `ID: ${profile.companion_id.slice(0, 8)}`;
-            document.getElementById("traitFormality").innerText = `${profile.traits.formality} (${profile.traits.tone})`;
-            document.getElementById("traitLength").innerText = profile.traits.average_response_length;
+            
+            setSelectValue(document.getElementById("editFormalitySelect"), profile.traits.formality);
+            setSelectValue(document.getElementById("editLengthSelect"), profile.traits.average_response_length);
             
             const slangBox = document.getElementById("traitSlang");
             slangBox.innerHTML = profile.traits.slang_tokens.length 
@@ -524,6 +555,34 @@
             topicBox.innerHTML = `${topics} <span class="ml-2">${emojis}</span>`;
 
             document.getElementById("systemPromptText").innerText = profile.system_prompt;
+        }
+
+        async function updateCompanionSettings() {
+            if (!currentCompanionId) return;
+            const formality = document.getElementById("editFormalitySelect").value;
+            const response_length = document.getElementById("editLengthSelect").value;
+
+            try {
+                const res = await fetch(`/api/v1/clone/profile/${currentCompanionId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ formality: formality, response_length: response_length })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.detail || "Failed to update companion settings");
+                }
+
+                const updatedProfile = await res.json();
+                renderProfilePanel(updatedProfile);
+
+                document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${updatedProfile.name} (${updatedProfile.companion_type.toUpperCase()}) | Tone: ${updatedProfile.traits.formality}`;
+                loadSavedCompanionsList();
+
+            } catch (err) {
+                alert("Error updating companion settings: " + err.message);
+            }
         }
 
         async function clonePersonality() {

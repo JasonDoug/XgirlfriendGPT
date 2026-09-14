@@ -38,6 +38,12 @@ class ExtractedTraits(BaseModel):
     physical_appearance: Optional[str] = None
     trigger_words: List[str] = Field(default_factory=list)
 
+class CompanionUpdateRequest(BaseModel):
+    formality: Optional[str] = Field(default=None, description="Updated formality setting (casual, formal, witty & sarcastic, etc.)")
+    response_length: Optional[str] = Field(default=None, description="Updated average response length (short, medium, verbose)")
+    name: Optional[str] = Field(default=None, description="Optional updated companion name")
+    companion_type: Optional[str] = Field(default=None, description="Optional updated companion type")
+
 class CompanionProfile(BaseModel):
     companion_id: str
     name: str
@@ -49,3 +55,4 @@ class CompanionProfile(BaseModel):
     voice_provider: Optional[str] = Field(default="cartesia", description="cartesia, elevenlabs, edge_tts")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+

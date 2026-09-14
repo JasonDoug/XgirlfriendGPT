@@ -101,3 +101,31 @@ def test_fast_mode_chat_and_on_demand_synthesis():
     synth_data = synth_resp.json()
     assert "audio_url" in synth_data
 
+def test_update_companion_profile_formality_and_length():
+    # 1. Create a companion first
+    create_payload = {
+        "companion_name": "Luna",
+        "companion_type": "friend",
+        "formality": "casual",
+        "response_length": "short",
+        "personality_description": "A bubbly and friendly artist who loves drawing and painting."
+    }
+    create_resp = client.post("/api/v1/clone/ingest", json=create_payload)
+    assert create_resp.status_code == 201
+    comp_id = create_resp.json()["companion_id"]
+
+    # 2. Update formality and response length via PATCH endpoint
+    update_payload = {
+        "formality": "pirate & adventurous",
+        "response_length": "verbose"
+    }
+    update_resp = client.patch(f"/api/v1/clone/profile/{comp_id}", json=update_payload)
+    assert update_resp.status_code == 200
+    updated_data = update_resp.json()
+
+    assert updated_data["traits"]["formality"] == "pirate & adventurous"
+    assert updated_data["traits"]["average_response_length"] == "verbose"
+    assert "PIRATE & ADVENTUROUS" in updated_data["system_prompt"]
+    assert "VERBOSE" in updated_data["system_prompt"]
+
+
