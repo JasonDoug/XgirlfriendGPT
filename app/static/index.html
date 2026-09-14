@@ -328,7 +328,8 @@
                         const cid = companionId || currentCompanionId;
                         const resp = await fetch(`/api/v1/chat/selfie/${cid}`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" }
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ prompt: imagePrompt || content })
                         });
                         const resData = await resp.json();
                         if (resData.image_url) {

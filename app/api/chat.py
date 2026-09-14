@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Optional
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 from app.models.chat import ChatRequest, ChatResponse, ImageGenCommand
 from app.models.personality import CompanionProfile
 from app.services.storage_service import StorageService
@@ -88,16 +89,18 @@ def send_chat_message(request: ChatRequest):
 
         reply_text = final_state.get("reply") or "Hey there!"
         image_url = final_state.get("image_url") if not request.fast_mode else None
-        should_gen_image = final_state.get("should_generate_image", False) if not request.fast_mode else False
-        image_prompt = final_state.get("image_prompt", "")
+        should_gen_image = final_state.get("should_generate_image", False)
+        raw_prompt = final_state.get("image_prompt", "")
+        
+        # Preserve or construct prompt for on-demand or pre-rendered generation
+        companion_name = profile_data.get("name", "Companion")
+        image_prompt = raw_prompt or f"A photorealistic selfie of {companion_name}, {reply_text[:60]}"
 
-        image_command = None
-        if should_gen_image or image_url:
-            image_command = ImageGenCommand(
-                generate_image=True,
-                prompt=image_prompt or "Selfie photo",
-                image_url=image_url
-            )
+        image_command = ImageGenCommand(
+            generate_image=should_gen_image and not request.fast_mode,
+            prompt=image_prompt,
+            image_url=image_url
+        )
 
     except Exception as e:
         logger.error(f"LangGraph Chat Error: {e}")
@@ -114,7 +117,6 @@ def send_chat_message(request: ChatRequest):
             audio_url = tts_res.get("audio_url")
         except Exception as e:
             logger.warning(f"Voice synthesis error: {e}")
-
 
     # Step 4: Persist Chat History to Disk
     assistant_turn = {
@@ -142,8 +144,11 @@ def send_chat_message(request: ChatRequest):
         retrieved_memories=retrieved_memories
     )
 
+class SelfieRequest(BaseModel):
+    prompt: Optional[str] = None
+
 @router.post("/selfie/{companion_id}")
-def generate_companion_selfie(companion_id: str, prompt: Optional[str] = None):
+def generate_companion_selfie(companion_id: str, req: Optional[SelfieRequest] = None):
     """
     On-Demand Visual Scene & Selfie Generator Endpoint.
     Generates a photo of the companion and returns the image URL.
@@ -151,7 +156,8 @@ def generate_companion_selfie(companion_id: str, prompt: Optional[str] = None):
     profile_data = StorageService.get_companion_by_id(companion_id)
     companion_name = profile_data.get("name") if profile_data else "Companion"
     
-    final_prompt = prompt or f"A photorealistic selfie of {companion_name}"
+    custom_prompt = req.prompt if (req and req.prompt) else None
+    final_prompt = custom_prompt or f"A photorealistic selfie of {companion_name}"
     from app.services.prompt_builder import PromptBuilderService
     if profile_data:
         custom_desc = profile_data.get("system_prompt", "")
@@ -162,4 +168,5 @@ def generate_companion_selfie(companion_id: str, prompt: Optional[str] = None):
     from app.services.visual_service import VisualService
     result = VisualService.generate_selfie(prompt=final_prompt, companion_id=companion_id)
     return result
+
 
