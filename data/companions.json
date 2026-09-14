@@ -1,6 +1,6 @@
 [
   {
-    "companion_id": "96c20df2-1003-46ca-a0dd-bdf7e3550978",
+    "companion_id": "c35c25b1-b7cb-4559-986b-1a9ab3906acd",
     "name": "Aria",
     "companion_type": "friend",
     "traits": {
@@ -36,11 +36,11 @@
     "loras": [],
     "voice_id": null,
     "voice_provider": "cartesia",
-    "created_at": "2026-09-14T19:30:22.580163",
-    "updated_at": "2026-09-14T19:30:22.580167"
+    "created_at": "2026-09-14T20:49:49.298393",
+    "updated_at": "2026-09-14T20:49:49.298398"
   },
   {
-    "companion_id": "bc3f38c3-309b-4087-bdbc-a38ee00346b7",
+    "companion_id": "17a4097a-9484-4fa8-922d-c455048b7e35",
     "name": "Kai",
     "companion_type": "mentor",
     "traits": {
@@ -68,8 +68,8 @@
     "loras": [],
     "voice_id": null,
     "voice_provider": "cartesia",
-    "created_at": "2026-09-14T19:30:22.584548",
-    "updated_at": "2026-09-14T19:30:22.584556"
+    "created_at": "2026-09-14T20:49:49.304898",
+    "updated_at": "2026-09-14T20:49:49.304905"
   },
   {
     "companion_id": "6951c009-0cf5-4eda-abdc-9903e6a3fd5e",

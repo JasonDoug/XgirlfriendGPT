@@ -146,7 +146,7 @@ class SettingsService:
                                     "category": category
                                 })
 
-        # 3. Discover LoRAs
+        # 3. Discover LoRAs with Architecture Tagging
         loras = [{"id": "", "label": "None (Base Model Only)"}]
         lora_scan_dirs = [
             os.path.join(models_root, "LoRAs"),
@@ -158,7 +158,10 @@ class SettingsService:
                     for file in files:
                         if file.endswith((".safetensors", ".ckpt")) and not file.startswith("put_"):
                             if not any(l["id"] == file for l in loras):
-                                loras.append({"id": file, "label": f"✨ LoRA: {file}"})
+                                f_lower = file.lower()
+                                arch = "FLUX" if "flux" in f_lower else ("SDXL" if "sdxl" in f_lower else "SD1.5/SDXL")
+                                loras.append({"id": file, "label": f"✨ [{arch}] {file}"})
+
 
         return {
             "llm_models": llm_models,
