@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XgirlfriendGPT - Multi-Modal AI Companion Platform</title>
+    <!-- Use Tailwind v3 CDN for full Slate color support -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); }
+        .accent-gradient { background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%); }
+        
+        /* Force High-Contrast Text in all input, select, and textarea fields */
+        input[type="text"], textarea, select {
+            color: #ffffff !important;
+            background-color: #1e293b !important;
+            border: 1px solid #475569 !important;
+        }
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: #6366f1 !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-slate-100">
+    <!-- Header -->
+    <header class="glass px-6 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl accent-gradient flex items-center justify-center font-bold text-xl shadow-lg text-white">🤖</div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-wide">XgirlfriendGPT</h1>
+                <p class="text-xs text-indigo-400">Personality Cloning & Persistent Character Library</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="openSettingsModal()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center gap-1.5 shadow">
+                <span>⚙️</span> Model Settings
+            </button>
+            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Core Engine Active
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden p-6 gap-6">
+        
+        <!-- Left Sidebar: Saved Companions & Form -->
+        <div class="w-1/2 flex flex-col gap-6 overflow-y-auto pr-2">
+            
+            <!-- Saved Companions Library -->
+            <div class="glass p-5 rounded-2xl flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span>📚</span> Saved Characters Library
+                    </h2>
+                    <span id="savedCountBadge" class="text-xs font-semibold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md">0 Characters</span>
+                </div>
+                
+                <div id="savedCompanionsList" class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                    <div class="text-xs text-slate-400 italic py-2">No saved characters yet. Create one below!</div>
+                </div>
+            </div>
+
+            <!-- Ingestion Form -->
+            <div class="glass p-6 rounded-2xl flex flex-col gap-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>✨</span> Create & Save New Companion
+                </h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Companion Name</label>
+                        <input id="companionName" type="text" placeholder="e.g. Aria, Captain Jack" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Companion Type</label>
+                        <select id="companionType" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                            <option value="friend">Best Friend</option>
+                            <option value="mentor">Mentor</option>
+                            <option value="creative">Creative Partner</option>
+                            <option value="custom">Custom Persona</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Formality / Style</label>
+                        <select id="companionFormality" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                            <option value="auto">🤖 Auto-Detect</option>
+                            <option value="casual">😎 Casual & Slang</option>
+                            <option value="formal">👔 Formal & Wise</option>
+                            <option value="witty & sarcastic">😜 Witty & Sarcastic</option>
+                            <option value="pirate & adventurous">🏴‍☠️ Pirate / Nautical</option>
+                            <option value="expressive & warm">✨ Expressive & Warm</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Response Length</label>
+                        <select id="companionResponseLength" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                            <option value="auto">🤖 Auto-Detect</option>
+                            <option value="short">⚡ Short & Concise</option>
+                            <option value="medium">⚖️ Medium / Balanced</option>
+                            <option value="verbose">📖 Detailed & Verbose</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Mode Switcher Tabs -->
+                <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+                    <button id="tabLogs" onclick="switchMode('logs')" class="flex-1 py-2 rounded-lg bg-indigo-600 text-white shadow-sm transition">
+                        📱 Paste Chat Logs / Emails
+                    </button>
+                    <button id="tabDesc" onclick="switchMode('desc')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition">
+                        ✍️ Describe Personality
+                    </button>
+                </div>
+
+                <!-- Input Field: Chat Logs -->
+                <div id="logsInputGroup">
+                    <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Raw Chat Logs / Emails / Text Messages</label>
+                    <textarea id="rawTexts" rows="4" placeholder="Paste sample texts, emails, or chat exports here..." class="w-full rounded-xl p-3.5 text-sm font-mono focus:outline-none"></textarea>
+                </div>
+
+                <!-- Input Field: Description Alternative -->
+                <div id="descInputGroup" class="hidden">
+                    <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Personality Description</label>
+                    <textarea id="personalityDesc" rows="4" placeholder="e.g. A pirate captain who speaks in pirate slang (Ahoy, matey, aye), loves rum and sailing, and is rough yet loyal..." class="w-full rounded-xl p-3.5 text-sm focus:outline-none"></textarea>
+                </div>
+
+                <button onclick="clonePersonality()" id="cloneBtn" class="accent-gradient hover:opacity-90 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2">
+                    <span>⚡</span> Form Personality & Save Character
+                </button>
+            </div>
+
+            <!-- Extracted Profile Output -->
+            <div id="profileContainer" class="glass p-6 rounded-2xl hidden flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="font-bold text-white flex items-center gap-2">
+                        <span>🎯</span> Active System Prompt & Traits
+                    </h3>
+                    <span id="companionIdBadge" class="text-xs font-mono bg-slate-900 text-indigo-300 px-2.5 py-1 rounded-lg border border-slate-700"></span>
+                </div>
+
+                <!-- Trait Badges -->
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block mb-1">Formality & Tone</span>
+                        <span id="traitFormality" class="font-semibold text-indigo-400 capitalize"></span>
+                    </div>
+                    <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block mb-1">Response Length</span>
+                        <span id="traitLength" class="font-semibold text-pink-400 capitalize"></span>
+                    </div>
+                    <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 col-span-2">
+                        <span class="text-slate-400 block mb-1">Detected Slang Tokens</span>
+                        <div id="traitSlang" class="flex flex-wrap gap-1.5 mt-1"></div>
+                    </div>
+                    <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800 col-span-2">
+                        <span class="text-slate-400 block mb-1">Top Topics & Emojis</span>
+                        <div id="traitTopics" class="flex flex-wrap gap-1.5 mt-1"></div>
+                    </div>
+                </div>
+
+                <!-- System Prompt Output -->
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Generated System Prompt</label>
+                    <pre id="systemPromptText" class="bg-slate-950 p-3.5 rounded-xl text-xs text-emerald-400 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto border border-slate-900"></pre>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: Interactive Companion Chat -->
+        <div class="w-1/2 glass rounded-2xl flex flex-col overflow-hidden">
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80">
+                <div class="flex items-center space-x-3">
+                    <div id="chatAvatar" class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow">?</div>
+                    <div>
+                        <h3 id="chatHeaderName" class="font-bold text-sm text-white">No Companion Selected</h3>
+                        <p id="chatHeaderStatus" class="text-xs text-slate-400">Select or create a companion to start chatting</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs text-slate-300 flex items-center gap-1 cursor-pointer">
+                        <input id="toggleMemory" type="checkbox" checked class="rounded bg-slate-900 border-slate-700 text-indigo-500 focus:ring-0"> Vector Memory
+                    </label>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="messagesContainer" class="flex-1 p-4 overflow-y-auto flex flex-col gap-3">
+                <div class="text-center text-xs text-slate-400 my-4">Select or create a companion to resume interactive chat</div>
+            </div>
+
+            <!-- Input Box & Quick Actions -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/80 flex flex-col gap-2.5">
+                <form onsubmit="sendMessage(event)" class="flex gap-2">
+                    <input id="messageInput" type="text" placeholder="Type your message..." disabled class="flex-1 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none disabled:opacity-50">
+                    <button id="sendBtn" type="submit" disabled class="accent-gradient font-bold text-white px-5 py-2.5 rounded-xl shadow-lg transition text-sm disabled:opacity-50">
+                        Send
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        let activeMode = "logs";
+        let currentCompanionId = null;
+        let currentCompanionName = "Companion";
+        let chatHistory = [];
+
+        function createAssistantMessageElement(content, audioUrl = null, imageUrl = null, imagePrompt = null, companionId = null) {
+            const compMsgDiv = document.createElement("div");
+            compMsgDiv.className = "bg-slate-900 border border-slate-800 p-3.5 rounded-2xl max-w-xs self-start text-sm text-slate-100 shadow-sm flex flex-col gap-2 font-medium";
+
+            const textNode = document.createElement("div");
+            textNode.innerText = content;
+            compMsgDiv.appendChild(textNode);
+
+            // Action Bar
+            const actionBar = document.createElement("div");
+            actionBar.className = "flex items-center flex-wrap gap-2 pt-1 border-t border-slate-800/80 mt-1";
+
+            // 1. Inline Voice Listen Button (if audioUrl exists)
+            if (audioUrl) {
+                const playBtn = document.createElement("button");
+                playBtn.type = "button";
+                playBtn.className = "inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-xs font-semibold rounded-lg border border-indigo-500/40 transition cursor-pointer";
+                playBtn.innerHTML = "<span>🔊</span> Listen";
+
+                const audio = new Audio(audioUrl);
+                playBtn.onclick = () => {
+                    if (audio.paused) {
+                        audio.play();
+                        playBtn.innerHTML = "<span>⏸️</span> Pause";
+                    } else {
+                        audio.pause();
+                        playBtn.innerHTML = "<span>🔊</span> Listen";
+                    }
+                };
+                audio.onended = () => {
+                    playBtn.innerHTML = "<span>🔊</span> Listen";
+                };
+                actionBar.appendChild(playBtn);
+            }
+
+            // 2. Inline Photo Button & Embedded Container
+            const photoBtn = document.createElement("button");
+            photoBtn.type = "button";
+            photoBtn.className = "inline-flex items-center gap-1.5 px-3 py-1 bg-pink-600/30 hover:bg-pink-600/50 text-pink-300 text-xs font-semibold rounded-lg border border-pink-500/40 transition cursor-pointer";
+
+            const imgContainer = document.createElement("div");
+            imgContainer.className = "mt-2 p-2 bg-slate-950 rounded-xl border border-slate-800 text-xs text-pink-400 flex flex-col gap-1.5 hidden";
+
+            let activeImageUrl = imageUrl;
+
+            function renderImageContainer(url, promptStr) {
+                imgContainer.innerHTML = `
+                    <div class="font-bold flex items-center gap-1 text-pink-300">📸 Photo Context</div>
+                    <a href="${url}" target="_blank">
+                        <img src="${url}" class="w-full rounded-lg border border-slate-800 shadow-md max-h-72 object-cover hover:opacity-95 transition" alt="Selfie" />
+                    </a>
+                    <div class="text-slate-400 italic text-xs">"${promptStr || 'Selfie'}"</div>
+                `;
+            }
+
+            if (activeImageUrl) {
+                photoBtn.innerHTML = "<span>📸</span> View Photo";
+                renderImageContainer(activeImageUrl, imagePrompt);
+            } else {
+                photoBtn.innerHTML = "<span>📸</span> View Photo";
+            }
+
+            photoBtn.onclick = async () => {
+                if (!activeImageUrl) {
+                    // Trigger on-demand selfie generation for this message
+                    photoBtn.innerHTML = "<span>📸</span> Rendering Photo...";
+                    imgContainer.classList.remove("hidden");
+                    imgContainer.innerHTML = `
+                        <div class="font-bold flex items-center gap-1">📸 Visual Pipeline Triggered</div>
+                        <div class="text-slate-400 italic">Prompt: "${imagePrompt || 'Companion Photo'}"</div>
+                        <div class="bg-pink-500/20 p-2 text-center rounded-lg font-mono text-pink-300 text-xs">ComfyUI Pipeline Rendering...</div>
+                    `;
+                    try {
+                        const cid = companionId || currentCompanionId;
+                        const resp = await fetch(`/api/v1/chat/selfie/${cid}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" }
+                        });
+                        const resData = await resp.json();
+                        if (resData.image_url) {
+                            activeImageUrl = resData.image_url;
+                            renderImageContainer(activeImageUrl, resData.prompt_used || imagePrompt);
+                            photoBtn.innerHTML = "<span>🙈</span> Hide Photo";
+                        } else {
+                            imgContainer.innerHTML = `<div class="text-red-400">Photo generation pending or ComfyUI offline.</div>`;
+                            photoBtn.innerHTML = "<span>📸</span> View Photo";
+                        }
+                    } catch (err) {
+                        imgContainer.innerHTML = `<div class="text-red-400">Error rendering photo: ${err.message}</div>`;
+                        photoBtn.innerHTML = "<span>📸</span> View Photo";
+                    }
+                    return;
+                }
+
+                // Toggle visibility if image already exists
+                if (imgContainer.classList.contains("hidden")) {
+                    imgContainer.classList.remove("hidden");
+                    photoBtn.innerHTML = "<span>🙈</span> Hide Photo";
+                } else {
+                    imgContainer.classList.add("hidden");
+                    photoBtn.innerHTML = "<span>📸</span> View Photo";
+                }
+            };
+
+            actionBar.appendChild(photoBtn);
+            compMsgDiv.appendChild(actionBar);
+            compMsgDiv.appendChild(imgContainer);
+
+            return compMsgDiv;
+        }
+
+        // Load saved companions on page load
+        window.addEventListener("DOMContentLoaded", () => {
+
+            loadSavedCompanionsList();
+        });
+
+        async function loadSavedCompanionsList() {
+            try {
+                const res = await fetch("/api/v1/clone/list");
+                if (!res.ok) return;
+                const companions = await res.json();
+                
+                const listEl = document.getElementById("savedCompanionsList");
+                document.getElementById("savedCountBadge").innerText = `${companions.length} Character${companions.length === 1 ? '' : 's'}`;
+
+                if (!companions.length) {
+                    listEl.innerHTML = `<div class="text-xs text-slate-400 italic py-2">No saved characters yet. Create one below!</div>`;
+                    return;
+                }
+
+                listEl.innerHTML = companions.map(c => `
+                    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl hover:border-indigo-500/50 transition cursor-pointer group" onclick="loadCompanion('${c.companion_id}')">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-600/80 flex items-center justify-center font-bold text-white text-xs">
+                                ${c.name[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-white group-hover:text-indigo-400 transition">${c.name}</div>
+                                <div class="text-xs text-slate-400">${c.companion_type.toUpperCase()} • ${c.traits.formality}</div>
+                            </div>
+                        </div>
+                        <button onclick="deleteCompanion(event, '${c.companion_id}')" class="text-slate-500 hover:text-red-400 p-1 text-xs transition" title="Delete Character">
+                            ❌
+                        </button>
+                    </div>
+                `).join("");
+
+            } catch (err) {
+                console.error("Failed to load saved companions list:", err);
+            }
+        }
+
+        async function loadCompanion(companionId) {
+            try {
+                const profileRes = await fetch(`/api/v1/clone/profile/${companionId}`);
+                if (!profileRes.ok) throw new Error("Character not found");
+                const profile = await profileRes.json();
+
+                currentCompanionId = profile.companion_id;
+                currentCompanionName = profile.name;
+
+                // Load stored chat history from disk
+                const historyRes = await fetch(`/api/v1/chat/history/${companionId}`);
+                chatHistory = historyRes.ok ? await historyRes.json() : [];
+
+                // Render Profile Panel UI
+                renderProfilePanel(profile);
+
+                // Enable Chat Interface & Restore Messages
+                document.getElementById("chatAvatar").innerText = profile.name[0].toUpperCase();
+                document.getElementById("chatHeaderName").innerText = profile.name;
+                document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${profile.name} (${profile.companion_type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
+                document.getElementById("messageInput").disabled = false;
+                document.getElementById("sendBtn").disabled = false;
+
+
+                const msgsContainer = document.getElementById("messagesContainer");
+                msgsContainer.innerHTML = `
+                    <div class="text-center text-xs text-indigo-400 my-2">Resumed chat session with "${profile.name}" (Qdrant Memory & Disk History Loaded)</div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl max-w-xs self-start text-sm text-slate-100 font-medium">
+                        ${profile.traits.greeting_style}
+                    </div>
+                `;
+
+                // Re-render past conversation turns
+                chatHistory.forEach(turn => {
+                    if (turn.role === "user") {
+                        const msgDiv = document.createElement("div");
+                        msgDiv.className = "bg-indigo-600 p-3 rounded-2xl max-w-xs self-end text-sm text-white shadow-sm font-medium";
+                        msgDiv.innerText = turn.content;
+                        msgsContainer.appendChild(msgDiv);
+                    } else {
+                        const compDiv = createAssistantMessageElement(
+                            turn.content, 
+                            turn.audio_url || null, 
+                            turn.image_url || null, 
+                            turn.image_prompt || null,
+                            companionId
+                        );
+                        msgsContainer.appendChild(compDiv);
+                    }
+                });
+
+                msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+
+            } catch (err) {
+                alert("Error loading character: " + err.message);
+            }
+        }
+
+        async function deleteCompanion(e, companionId) {
+            e.stopPropagation();
+            if (!confirm("Are you sure you want to delete this saved character and its history?")) return;
+            
+            try {
+                await fetch(`/api/v1/clone/${companionId}`, { method: "DELETE" });
+                if (currentCompanionId === companionId) {
+                    currentCompanionId = null;
+                    document.getElementById("profileContainer").classList.add("hidden");
+                    document.getElementById("chatHeaderName").innerText = "No Companion Selected";
+                    document.getElementById("messageInput").disabled = true;
+                    document.getElementById("sendBtn").disabled = true;
+
+                    document.getElementById("messagesContainer").innerHTML = `<div class="text-center text-xs text-slate-400 my-4">Select or create a companion to resume interactive chat</div>`;
+                }
+                loadSavedCompanionsList();
+            } catch (err) {
+                alert("Failed to delete character");
+            }
+        }
+
+        function switchMode(mode) {
+            activeMode = mode;
+            const tabLogs = document.getElementById("tabLogs");
+            const tabDesc = document.getElementById("tabDesc");
+            const logsGroup = document.getElementById("logsInputGroup");
+            const descGroup = document.getElementById("descInputGroup");
+
+            if (mode === 'logs') {
+                tabLogs.className = "flex-1 py-2 rounded-lg bg-indigo-600 text-white shadow-sm transition";
+                tabDesc.className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition";
+                logsGroup.classList.remove("hidden");
+                descGroup.classList.add("hidden");
+            } else {
+                tabDesc.className = "flex-1 py-2 rounded-lg bg-indigo-600 text-white shadow-sm transition";
+                tabLogs.className = "flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition";
+                descGroup.classList.remove("hidden");
+                logsGroup.classList.add("hidden");
+            }
+        }
+
+        function renderProfilePanel(profile) {
+            document.getElementById("profileContainer").classList.remove("hidden");
+            document.getElementById("profileContainer").classList.add("flex");
+            document.getElementById("companionIdBadge").innerText = `ID: ${profile.companion_id.slice(0, 8)}`;
+            document.getElementById("traitFormality").innerText = `${profile.traits.formality} (${profile.traits.tone})`;
+            document.getElementById("traitLength").innerText = profile.traits.average_response_length;
+            
+            const slangBox = document.getElementById("traitSlang");
+            slangBox.innerHTML = profile.traits.slang_tokens.length 
+                ? profile.traits.slang_tokens.map(s => `<span class="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md font-mono">${s}</span>`).join("")
+                : `<span class="text-slate-500">None detected</span>`;
+
+            const topicBox = document.getElementById("traitTopics");
+            const emojis = profile.traits.favorite_emojis.join(" ");
+            const topics = profile.traits.top_topics.map(t => `<span class="bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-md">${t}</span>`).join("");
+            topicBox.innerHTML = `${topics} <span class="ml-2">${emojis}</span>`;
+
+            document.getElementById("systemPromptText").innerText = profile.system_prompt;
+        }
+
+        async function clonePersonality() {
+            const name = document.getElementById("companionName").value.trim();
+            const type = document.getElementById("companionType").value;
+
+            if (!name) {
+                alert("Please enter a companion name.");
+                return;
+            }
+
+            const descText = document.getElementById("personalityDesc").value.trim();
+            const textRaw = document.getElementById("rawTexts").value.trim();
+
+            const formality = document.getElementById("companionFormality").value;
+            const responseLength = document.getElementById("companionResponseLength").value;
+
+            const payload = {
+                companion_name: name,
+                companion_type: type,
+                formality: formality,
+                response_length: responseLength
+            };
+
+            if (activeMode === "desc" && descText) {
+                payload.personality_description = descText;
+            } else if (activeMode === "logs" && textRaw) {
+                payload.raw_texts = [textRaw];
+            } else if (descText) {
+                payload.personality_description = descText;
+            } else if (textRaw) {
+                payload.raw_texts = [textRaw];
+            } else {
+                alert("Please enter a personality description or paste chat logs.");
+                return;
+            }
+
+            const cloneBtn = document.getElementById("cloneBtn");
+            cloneBtn.disabled = true;
+            cloneBtn.innerHTML = "Processing...";
+
+            try {
+                const response = await fetch("/api/v1/clone/ingest", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || "Failed to create companion");
+                }
+
+                const profile = await response.json();
+                currentCompanionId = profile.companion_id;
+                currentCompanionName = profile.name;
+                chatHistory = [];
+
+                // Render Profile UI & Refresh Library
+                renderProfilePanel(profile);
+                loadSavedCompanionsList();
+
+                // Enable Chat
+                document.getElementById("chatAvatar").innerText = name[0].toUpperCase();
+                document.getElementById("chatHeaderName").innerText = name;
+                document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${name} (${type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
+                document.getElementById("messageInput").disabled = false;
+                document.getElementById("sendBtn").disabled = false;
+
+
+                // Clear Chat Messages & Start Fresh Session
+                const msgsContainer = document.getElementById("messagesContainer");
+                msgsContainer.innerHTML = `
+                    <div class="text-center text-xs text-indigo-400 my-2">Companion "${name}" saved & activated with Qdrant vector memory</div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl max-w-xs self-start text-sm text-slate-100 font-medium">
+                        ${profile.traits.greeting_style}
+                    </div>
+                `;
+
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                cloneBtn.disabled = false;
+                cloneBtn.innerHTML = "<span>⚡</span> Form Personality & Save Character";
+            }
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById("messageInput");
+            const message = input.value.trim();
+            if (!message || !currentCompanionId) return;
+
+            input.value = "";
+            const msgsContainer = document.getElementById("messagesContainer");
+
+            // Append User Message
+            const userMsgDiv = document.createElement("div");
+            userMsgDiv.className = "bg-indigo-600 p-3 rounded-2xl max-w-xs self-end text-sm text-white shadow-sm font-medium";
+            userMsgDiv.innerText = message;
+            msgsContainer.appendChild(userMsgDiv);
+            msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+            const enableMemory = document.getElementById("toggleMemory").checked;
+
+            try {
+                const response = await fetch("/api/v1/chat/message", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        companion_id: currentCompanionId,
+                        user_id: "user_" + currentCompanionId,
+                        message: message,
+                        history: chatHistory,
+                        enable_memory: enableMemory,
+                        enable_vision: true
+                    })
+                });
+
+                const data = await response.json();
+
+                // Store turns in multi-turn history buffer
+                chatHistory.push({ role: "user", content: message });
+                chatHistory.push({ role: "assistant", content: data.reply });
+
+                if (chatHistory.length > 30) {
+                    chatHistory = chatHistory.slice(-30);
+                }
+
+                // Append Memory Context Notice if retrieved
+                if (data.retrieved_memories && data.retrieved_memories.length > 0) {
+                    const memNotice = document.createElement("div");
+                    memNotice.className = "text-center text-xs text-amber-300 bg-amber-500/10 py-1 px-3 rounded-full self-center border border-amber-500/30";
+                    memNotice.innerText = `🧠 Qdrant Memory Recalled: "${data.retrieved_memories[0]}"`;
+                    msgsContainer.appendChild(memNotice);
+                }
+
+                // Append Companion Reply
+                const imageCmd = data.image_command || (data.image_url ? { generate_image: true, prompt: "Photo", image_url: data.image_url } : null);
+                const imgUrl = imageCmd ? imageCmd.image_url : null;
+                const imgPrompt = imageCmd ? imageCmd.prompt : null;
+
+                const compMsgDiv = createAssistantMessageElement(
+                    data.reply, 
+                    data.audio_url, 
+                    imgUrl, 
+                    imgPrompt, 
+                    currentCompanionId
+                );
+
+                msgsContainer.appendChild(compMsgDiv);
+                msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function requestSelfie(type = 'selfie') {
+            const input = document.getElementById("messageInput");
+            if (type === 'location') {
+                input.value = "Can you show me a photo of where you are right now?";
+            } else {
+                input.value = "Can you send me a selfie right now?";
+            }
+            sendMessage(new Event('submit'));
+        }
+
+        async function openSettingsModal() {
+            try {
+                const [modelsRes, currentRes] = await Promise.all([
+                    fetch("/api/v1/settings/models"),
+                    fetch("/api/v1/settings")
+                ]);
+
+                if (!modelsRes.ok || !currentRes.ok) return;
+
+                const modelsData = await modelsRes.json();
+                const currentData = await currentRes.json();
+
+                // Populate LLM Select
+                const llmSelect = document.getElementById("settingLlmModel");
+                llmSelect.innerHTML = modelsData.llm_models.map(m => 
+                    `<option value="${m.id}" ${m.id === currentData.llm_model ? 'selected' : ''}>${m.label}</option>`
+                ).join("");
+
+                // Populate Image Model Select
+                const imgSelect = document.getElementById("settingImageModel");
+                imgSelect.innerHTML = modelsData.image_models.map(m => 
+                    `<option value="${m.id}" ${m.id === currentData.image_model ? 'selected' : ''}>${m.label}</option>`
+                ).join("");
+
+                // Populate LoRA Select (Multi-select)
+                const currentLoras = (currentData.selected_lora || "").split(",").map(s => s.trim());
+                const loraSelect = document.getElementById("settingLora");
+                loraSelect.innerHTML = modelsData.loras.map(l => 
+                    `<option value="${l.id}" ${(currentLoras.includes(l.id) || (l.id === "" && (currentLoras.length === 0 || currentLoras[0] === ""))) ? 'selected' : ''}>${l.label}</option>`
+                ).join("");
+
+                // Populate Resolution
+                const resVal = `${currentData.image_width}x${currentData.image_height}`;
+                const resSelect = document.getElementById("settingResolution");
+                if (Array.from(resSelect.options).some(o => o.value === resVal)) {
+                    resSelect.value = resVal;
+                }
+
+                // Populate Sliders
+                document.getElementById("settingSteps").value = currentData.image_steps || 20;
+                document.getElementById("settingStepsVal").innerText = currentData.image_steps || 20;
+
+                document.getElementById("settingCfg").value = currentData.image_cfg || 7.0;
+                document.getElementById("settingCfgVal").innerText = currentData.image_cfg || 7.0;
+
+                document.getElementById("settingsModal").classList.remove("hidden");
+            } catch (err) {
+                alert("Failed to load model settings: " + err.message);
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById("settingsModal").classList.add("hidden");
+        }
+
+        async function saveSettings() {
+            const llmModel = document.getElementById("settingLlmModel").value;
+            const imageModel = document.getElementById("settingImageModel").value;
+            const loraOptions = Array.from(document.getElementById("settingLora").selectedOptions).map(o => o.value).filter(v => v !== "");
+            const lora = loraOptions.join(",");
+
+            const resParts = document.getElementById("settingResolution").value.split("x");
+            const width = parseInt(resParts[0]);
+            const height = parseInt(resParts[1]);
+
+            const steps = parseInt(document.getElementById("settingSteps").value);
+            const cfg = parseFloat(document.getElementById("settingCfg").value);
+
+            try {
+                const resp = await fetch("/api/v1/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        llm_model: llmModel,
+                        image_model: imageModel,
+                        image_width: width,
+                        image_height: height,
+                        image_steps: steps,
+                        image_cfg: cfg,
+                        selected_lora: lora
+                    })
+                });
+
+                if (!resp.ok) throw new Error("Failed to save settings");
+
+                closeSettingsModal();
+                alert(`Settings saved!\nActive LLM: ${llmModel}\nActive Image Model: ${imageModel}`);
+            } catch (err) {
+                alert("Error saving settings: " + err.message);
+            }
+        }
+    </script>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="glass w-full max-w-lg p-6 rounded-2xl flex flex-col gap-5 border border-slate-800 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>⚙️</span> Model & Pipeline Settings
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-4 text-xs">
+                <!-- LLM Model Selection -->
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active LLM Model (Text & Chat)</label>
+                    <select id="settingLlmModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                </div>
+
+                <!-- Image Generation Model Selection -->
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active Image Generation Model (Checkpoints & Diffusion)</label>
+                    <select id="settingImageModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                </div>
+
+                <!-- Image Parameters Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Resolution</label>
+                        <select id="settingResolution" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white">
+                            <option value="896x1152">896x1152 (Portrait Selfie)</option>
+                            <option value="1024x1024">1024x1024 (Square)</option>
+                            <option value="1152x896">1152x896 (Landscape)</option>
+                            <option value="512x512">512x512 (Fast Draft)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">LoRA Style Overlays <span class="text-slate-500 font-normal lowercase">(hold Ctrl to select multiple)</span></label>
+                        <select id="settingLora" multiple size="3" class="w-full rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Sampling Steps: <span id="settingStepsVal" class="text-indigo-400">20</span></label>
+                        <input id="settingSteps" type="range" min="1" max="50" value="20" oninput="document.getElementById('settingStepsVal').innerText = this.value" class="w-full">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">CFG Scale: <span id="settingCfgVal" class="text-pink-400">7.0</span></label>
+                        <input id="settingCfg" type="range" min="1.0" max="15.0" step="0.5" value="7.0" oninput="document.getElementById('settingCfgVal').innerText = this.value" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-slate-800">
+                <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-semibold text-xs">Cancel</button>
+                <button onclick="saveSettings()" class="accent-gradient text-white font-bold px-5 py-2 rounded-xl text-xs shadow-lg hover:opacity-90">Save & Apply Settings</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

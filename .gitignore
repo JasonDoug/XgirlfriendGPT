@@ -1,0 +1,28 @@
+# Python & Environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Temporary Files
+*.log
+uvicorn.log
+
+# Static Generated Images & Temporary Storage
+app/static/generated/
+data/chats/*.json
+data/room_chats/*.json
+!data/companions.json
+!data/rooms.json
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store

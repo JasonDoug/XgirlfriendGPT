@@ -1,0 +1,9 @@
+{
+  "llm_model": "hf.co/Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix:Q8_0-imat",
+  "image_model": "flux-2-klein-base-4b.safetensors",
+  "image_width": 1024,
+  "image_height": 1024,
+  "image_steps": 4,
+  "image_cfg": 3.5,
+  "selected_lora": "snofs_krea_v1_4.safetensors,lenovo_krea2.safetensors"
+}
