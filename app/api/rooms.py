@@ -69,7 +69,7 @@ def get_room(room_id: str):
     return Room(**raw_room)
 
 @router.post("/message", response_model=RoomMessageResponse)
-def send_room_message(request: RoomMessageRequest):
+async def send_room_message(request: RoomMessageRequest):
     """
     Executes a multi-persona group chat turn using the LangGraph multi-agent orchestrator.
     """
@@ -119,7 +119,7 @@ def send_room_message(request: RoomMessageRequest):
     )
 
     # Invoke LangGraph Workflow
-    final_state_dict = companion_graph.invoke(initial_state)
+    final_state_dict = await companion_graph.ainvoke(initial_state)
 
     speaker_id = final_state_dict.get("current_speaker_id") or active_ids[0]
     speaker_name = final_state_dict.get("current_speaker_name") or companion_profiles[speaker_id].get("name", "Companion")

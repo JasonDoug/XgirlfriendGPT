@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from pydantic import BaseModel
 from app.models.chat import ChatRequest, ChatResponse, ImageGenCommand
 from app.models.personality import CompanionProfile
@@ -9,26 +9,41 @@ from app.services.memory_service import MemoryService
 from app.services.voice_service import VoiceService
 from app.graph.workflow import companion_graph
 from app.graph.state import CompanionState
+from app.middleware.rate_limiter import check_chat_rate_limit, check_media_rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["Companion Chat & Text Engine"])
-memory_service = MemoryService()
+
+def validate_companion_id(companion_id: str) -> str:
+    if not isinstance(companion_id, str):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid companion_id format")
+    clean_id = companion_id.strip()
+    if not clean_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="companion_id cannot be empty or blank")
+    if ".." in clean_id or "/" in clean_id or "\\" in clean_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid companion_id: Path traversal characters forbidden")
+    return clean_id
 
 @router.get("/history/{companion_id}")
 def get_chat_history(companion_id: str):
     """
     Returns stored chat history turns for a companion.
     """
-    return StorageService.get_chat_history(companion_id)
+    clean_id = validate_companion_id(companion_id)
+    return StorageService.get_chat_history(clean_id)
 
-@router.post("/message", response_model=ChatResponse)
-def send_chat_message(request: ChatRequest):
+@router.post("/message", response_model=ChatResponse, dependencies=[Depends(check_chat_rate_limit)])
+async def send_chat_message(request: ChatRequest):
     """
     Companion Interactive Chat Endpoint.
     Executes roleplay, selfie generation, vector memory, and voice synthesis
     via the LangGraph Multi-Agent Engine (companion_graph).
     """
+    clean_id = validate_companion_id(request.companion_id)
+    request.companion_id = clean_id
     logger.info(f"Incoming chat request: companion_id='{request.companion_id}', message='{request.message}'")
+    
+    memory_service = MemoryService.get_instance()
     
     profile_data = StorageService.get_companion_by_id(request.companion_id)
     if not profile_data:
@@ -68,7 +83,7 @@ def send_chat_message(request: ChatRequest):
     if not history_turns:
         history_turns = StorageService.get_chat_history(request.companion_id)
 
-    # Step 2: Invoke LangGraph Multi-Agent Orchestrator
+    # Step 2: Invoke LangGraph Multi-Agent Orchestrator asynchronously
     try:
         initial_state = CompanionState(
             room_id=f"single_{request.companion_id}",
@@ -85,7 +100,7 @@ def send_chat_message(request: ChatRequest):
             # In Fast Mode, skip pre-rendering ComfyUI visual generation during chat turn
             initial_state.should_generate_image = False
 
-        final_state = companion_graph.invoke(initial_state)
+        final_state = await companion_graph.ainvoke(initial_state)
 
         reply_text = final_state.get("reply") or "Hey there!"
         image_url = final_state.get("image_url") if not request.fast_mode else None
@@ -147,13 +162,14 @@ def send_chat_message(request: ChatRequest):
 class SelfieRequest(BaseModel):
     prompt: Optional[str] = None
 
-@router.post("/selfie/{companion_id}")
-def generate_companion_selfie(companion_id: str, req: Optional[SelfieRequest] = None):
+@router.post("/selfie/{companion_id}", dependencies=[Depends(check_media_rate_limit)])
+async def generate_companion_selfie(companion_id: str, req: Optional[SelfieRequest] = None):
     """
     On-Demand Visual Scene & Selfie Generator Endpoint.
-    Generates a photo of the companion and returns the image URL.
+    Generates a photo of the companion asynchronously and returns the image URL.
     """
-    profile_data = StorageService.get_companion_by_id(companion_id)
+    clean_id = validate_companion_id(companion_id)
+    profile_data = StorageService.get_companion_by_id(clean_id)
     companion_name = profile_data.get("name") if profile_data else "Companion"
     
     custom_prompt = req.prompt if (req and req.prompt) else None
@@ -166,7 +182,7 @@ def generate_companion_selfie(companion_id: str, req: Optional[SelfieRequest] = 
             final_prompt = f"{descriptors}, {final_prompt}"
 
     from app.services.visual_service import VisualService
-    result = VisualService.generate_selfie(prompt=final_prompt, companion_id=companion_id)
+    result = await VisualService.generate_selfie_async(prompt=final_prompt, companion_id=clean_id)
     return result
 
 

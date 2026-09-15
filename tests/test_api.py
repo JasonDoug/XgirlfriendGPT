@@ -8,6 +8,37 @@ def test_root_endpoint():
     assert response.status_code == 200
     assert ("XgirlfriendGPT" in response.text or response.json().get("app") == "XgirlfriendGPT")
 
+def test_health_and_observability_endpoints():
+    liveness_resp = client.get("/health/liveness")
+    assert liveness_resp.status_code == 200
+    assert liveness_resp.json()["status"] == "ok"
+    assert "uptime_seconds" in liveness_resp.json()
+
+    readiness_resp = client.get("/health/readiness")
+    assert readiness_resp.status_code in [200, 503]
+    readiness_data = readiness_resp.json()
+    assert "dependencies" in readiness_data
+    assert "qdrant" in readiness_data["dependencies"]
+
+    metrics_resp = client.get("/health/metrics")
+    assert metrics_resp.status_code == 200
+    assert "http_requests_total" in metrics_resp.text
+    assert "x-request-id" in liveness_resp.headers
+
+def test_auth_jwt_token_issuance_and_verification():
+    token_resp = client.post("/api/v1/auth/token", json={"user_id": "test_user_777"})
+    assert token_resp.status_code == 200
+    data = token_resp.json()
+    assert "access_token" in data
+    assert data["user_id"] == "test_user_777"
+
+    headers = {"Authorization": f"Bearer {data['access_token']}"}
+    me_resp = client.get("/api/v1/auth/me", headers=headers)
+    assert me_resp.status_code == 200
+    assert me_resp.json()["user_id"] == "test_user_777"
+
+
+
 def test_clone_personality_with_logs():
     payload = {
         "companion_name": "Aria",

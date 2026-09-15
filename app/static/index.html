@@ -224,7 +224,10 @@
 
     </div>
 
-    <script>
+    <script type="module">
+        import { API } from "/static/js/api.js";
+        window.API = API;
+
         let activeMode = "logs";
         let currentCompanionId = null;
         let currentCompanionName = "Companion";
@@ -845,6 +848,18 @@
                 alert("Error saving settings: " + err.message);
             }
         }
+
+        window.switchMode = switchMode;
+        window.clonePersonality = clonePersonality;
+        window.loadCompanion = loadCompanion;
+        window.deleteCompanion = deleteCompanion;
+        window.updateCompanionSettings = updateCompanionSettings;
+        window.sendMessage = sendMessage;
+        window.renderProfilePanel = renderProfilePanel;
+        window.requestSelfie = requestSelfie;
+        window.openSettingsModal = openSettingsModal;
+        window.closeSettingsModal = closeSettingsModal;
+        window.saveSettings = saveSettings;
     </script>
 
     <!-- Settings Modal -->

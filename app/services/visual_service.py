@@ -430,7 +430,7 @@ class VisualPipelineService:
             if not prompt_id:
                 return cls._fallback_response(prompt, companion_id)
 
-            # 2. Poll ComfyUI history endpoint until completed (up to 180s for cold model loading and VAE decode)
+            # 2. Poll ComfyUI history endpoint until completed
             start_time = time.time()
             filename = None
 
@@ -441,7 +441,6 @@ class VisualPipelineService:
                         history_data = history_resp.json()
                         if prompt_id in history_data:
                             outputs = history_data[prompt_id].get("outputs", {})
-                            # Search for SaveImage node outputs (Node "9")
                             for node_id, node_output in outputs.items():
                                 images = node_output.get("images", [])
                                 if images:
@@ -479,6 +478,113 @@ class VisualPipelineService:
 
         except Exception as e:
             logger.warning(f"Error during ComfyUI generation: {e}")
+
+        return cls._fallback_response(prompt, companion_id)
+
+    @classmethod
+    async def generate_selfie_async(cls, prompt: str, companion_id: str, is_character_card: bool = False) -> Dict[str, Any]:
+        """
+        Asynchronously generates a selfie/image using ComfyUI with non-blocking event loop polling.
+        """
+        import asyncio
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "generated", companion_id)
+        await asyncio.to_thread(os.makedirs, output_dir, exist_ok=True)
+
+        comp_name = "Companion"
+        comp_gender = "female"
+        from app.services.storage_service import StorageService
+        profile = await asyncio.to_thread(StorageService.get_companion_by_id, companion_id)
+        if profile:
+            comp_name = profile.get("name", comp_name)
+            custom_desc = profile.get("system_prompt", "")
+            if "male" in custom_desc.lower() and "female" not in custom_desc.lower():
+                comp_gender = "male"
+
+        from app.services.settings_service import SettingsService
+        active_cfg = await asyncio.to_thread(SettingsService.get_settings)
+        ckpt = active_cfg.get("image_model") or "flux1-dev-fp8.safetensors"
+        width = int(active_cfg.get("image_width", 512))
+        height = int(active_cfg.get("image_height", 768))
+        steps = int(active_cfg.get("image_steps", 20))
+        cfg_val = float(active_cfg.get("image_cfg", 1.0))
+
+        workflow = await asyncio.to_thread(
+            cls.build_dynamic_workflow,
+            prompt=prompt,
+            checkpoint_name=ckpt,
+            width=width,
+            height=height,
+            steps=steps,
+            cfg=cfg_val,
+            companion_gender=comp_gender,
+            companion_name=comp_name,
+            selected_lora=active_cfg.get("selected_lora", "")
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(f"{cls.COMFYUI_URL}/prompt", json={"prompt": workflow})
+                if resp.status_code != 200:
+                    logger.error(f"ComfyUI prompt submission failed: {resp.text}")
+                    return cls._fallback_response(prompt, companion_id)
+
+                prompt_data = resp.json()
+                prompt_id = prompt_data.get("prompt_id")
+                if not prompt_id:
+                    return cls._fallback_response(prompt, companion_id)
+
+            start_time = time.time()
+            filename = None
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                while time.time() - start_time < 180.0:
+                    try:
+                        history_resp = await client.get(f"{cls.COMFYUI_URL}/history/{prompt_id}")
+                        if history_resp.status_code == 200:
+                            history_data = history_resp.json()
+                            if prompt_id in history_data:
+                                outputs = history_data[prompt_id].get("outputs", {})
+                                for node_id, node_output in outputs.items():
+                                    images = node_output.get("images", [])
+                                    if images:
+                                        img_info = images[0]
+                                        filename = img_info.get("filename")
+                                        break
+                                if filename:
+                                    break
+                    except Exception:
+                        pass
+                    await asyncio.sleep(1.0)
+
+            if filename:
+                comfy_disk_path = f"/home/jason/AI-ImageGen/ComfyUI/output/{filename}"
+                dest_file_path = os.path.join(output_dir, filename)
+
+                exists_comfy = await asyncio.to_thread(os.path.exists, comfy_disk_path)
+                if exists_comfy:
+                    import shutil
+                    await asyncio.to_thread(shutil.copyfile, comfy_disk_path, dest_file_path)
+                else:
+                    view_url = f"{cls.COMFYUI_URL}/view?filename={filename}&type=output"
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        img_bytes_resp = await client.get(view_url)
+                        if img_bytes_resp.status_code == 200:
+                            def write_bytes(path, data):
+                                with open(path, "wb") as f:
+                                    f.write(data)
+                            await asyncio.to_thread(write_bytes, dest_file_path, img_bytes_resp.content)
+
+                exists_dest = await asyncio.to_thread(os.path.exists, dest_file_path)
+                if exists_dest:
+                    relative_url = f"/static/generated/{companion_id}/{filename}"
+                    return {
+                        "status": "success",
+                        "image_url": relative_url,
+                        "prompt_used": prompt
+                    }
+
+        except Exception as e:
+            logger.warning(f"Error during async ComfyUI generation: {e}")
 
         return cls._fallback_response(prompt, companion_id)
 

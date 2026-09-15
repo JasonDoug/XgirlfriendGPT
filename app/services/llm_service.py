@@ -11,11 +11,11 @@ class LLMService:
     """
     Text & Personality Engine LLM Service.
     Connects to local Ollama (http://localhost:11434/v1), vLLM, Together AI, or OpenAI.
-    Supports multi-turn conversation history and unconstrained roleplay inference.
+    Supports multi-turn conversation history and unconstrained roleplay inference with async and sync interfaces.
     """
 
     @classmethod
-    def generate_chat_response(
+    async def generate_chat_response_async(
         cls, 
         system_prompt: str, 
         user_message: str, 
@@ -46,7 +46,7 @@ class LLMService:
         # Retry loop for LLM inference (up to 3 attempts total for photo requests)
         max_attempts = 3 if is_photo_request else 1
         for attempt in range(max_attempts):
-            raw_output = cls._call_inference_engine(
+            raw_output = await cls._call_inference_engine_async(
                 user_message=current_user_message, 
                 system_prompt=augmented_system_prompt,
                 history=history_list
@@ -75,8 +75,65 @@ class LLMService:
                 cleaned_text = re.sub(r'```(?:json)?\s*```', '', cleaned_text).strip()
                 return cleaned_text if cleaned_text else cleaned_output.strip(), None
 
+        raise RuntimeError(f"Image Tool Call Generation Failed: {last_error_detail}")
 
-        # If photo request retries failed completely, raise an explicit error for clean debugging
+    @classmethod
+    def generate_chat_response(
+        cls, 
+        system_prompt: str, 
+        user_message: str, 
+        memory_context: List[str],
+        history: Optional[List[Dict[str, str]]] = None
+    ) -> Tuple[str, Optional[ImageGenCommand]]:
+        
+        # Inject long-term memory facts if available
+        context_str = ""
+        if memory_context:
+            context_str = "\n### RECALLED LONG-TERM FACTS & MEMORIES:\n" + "\n".join([f"- {m}" for m in memory_context]) + "\n"
+
+        augmented_system_prompt = f"{system_prompt}\n{context_str}".strip()
+
+        user_msg_lower = user_message.lower() if user_message else ""
+        photo_keywords = [
+            "selfie", "photo", "picture", "pic", "image", "show where", "show me where", "where you are", 
+            "where are you", "your room", "your surroundings", "your location", "take a pic", 
+            "snap a pic", "snap", "camera", "look like", "send pic", "send photo", "send selfie", "show me", "let me see"
+        ]
+        is_photo_request = any(kw in user_msg_lower for kw in photo_keywords)
+
+        history_list = list(history or [])
+        current_user_message = user_message
+        last_error_detail = ""
+
+        max_attempts = 3 if is_photo_request else 1
+        for attempt in range(max_attempts):
+            raw_output = cls._call_inference_engine(
+                user_message=current_user_message, 
+                system_prompt=augmented_system_prompt,
+                history=history_list
+            )
+            
+            cleaned_output = cls._strip_thinking_tags(raw_output)
+            reply_text, image_command = cls._extract_image_tool_call(cleaned_output)
+
+            if image_command and image_command.prompt and image_command.prompt.strip():
+                return reply_text, image_command
+
+            if is_photo_request:
+                last_error_detail = f"Attempt {attempt + 1}/{max_attempts}: LLM did not include a valid JSON image tool call. Model output: '{cleaned_output}'"
+                logger.warning(last_error_detail)
+                if attempt < max_attempts - 1:
+                    current_user_message = (
+                        f"{user_message}\n\n"
+                        f"[SYSTEM REMINDER: The user requested a photo/selfie/location picture. "
+                        f"You MUST append a JSON tool call at the end of your message describing what you look like or where you are AT THIS EXACT MOMENT based on the current chat context: "
+                        f"{{\"generate_image\": true, \"prompt\": \"<detailed description based on current chat context>\"}}]"
+                    )
+            else:
+                cleaned_text = re.sub(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```|\{[\s\S]*?\}', '', cleaned_output).strip()
+                cleaned_text = re.sub(r'```(?:json)?\s*```', '', cleaned_text).strip()
+                return cleaned_text if cleaned_text else cleaned_output.strip(), None
+
         raise RuntimeError(f"Image Tool Call Generation Failed: {last_error_detail}")
 
     @classmethod
@@ -89,20 +146,89 @@ class LLMService:
         return cleaned if cleaned else text.strip()
 
     @classmethod
+    def _build_headers(cls) -> Dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if settings.LLM_API_KEY:
+            url_lower = settings.LLM_BASE_URL.lower()
+            is_https = url_lower.startswith("https://")
+            is_loopback = any(h in url_lower for h in ["localhost", "127.0.0.1", "::1", "0.0.0.0"])
+            if is_https or is_loopback:
+                headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+            else:
+                logger.warning("LLM_API_KEY set but target LLM_BASE_URL is unencrypted non-loopback HTTP; omitting Authorization header.")
+        return headers
+
+    @classmethod
+    async def _call_inference_engine_async(cls, user_message: str, system_prompt: str, history: List[Dict[str, str]]) -> str:
+        """
+        Calls live LLM server asynchronously using httpx.AsyncClient.
+        """
+        import httpx
+        import asyncio
+
+        headers = cls._build_headers()
+
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            for turn in history[-8:]:
+                role = turn.get("role", "user")
+                content = turn.get("content", "")
+                if role in ["user", "assistant"] and content:
+                    clean_content = content[:1000].strip()
+                    messages.append({"role": role, "content": clean_content})
+
+        messages.append({"role": "user", "content": user_message})
+
+        from app.services.settings_service import SettingsService
+        active_settings = SettingsService.get_settings()
+        selected_model = active_settings.get("llm_model") or settings.DEFAULT_MODEL
+
+        payload = {
+            "model": selected_model,
+            "messages": messages,
+            "temperature": 0.85,
+            "top_p": 0.9,
+            "max_tokens": 1024
+        }
+
+        import time
+        logger.info(f"Sending async prompt turn to LLM model '{selected_model}' at {settings.LLM_BASE_URL}...")
+        start_t = time.time()
+        last_exception = None
+
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            for attempt in range(2):
+                try:
+                    url = f"{settings.LLM_BASE_URL.rstrip('/')}/chat/completions"
+                    resp = await client.post(url, json=payload, headers=headers)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        content = data["choices"][0]["message"]["content"]
+                        elapsed = time.time() - start_t
+                        logger.info(f"LLM model '{selected_model}' responded asynchronously in {elapsed:.2f}s")
+                        if content and content.strip():
+                            return content.strip()
+                    else:
+                        last_exception = f"LLM API returned status {resp.status_code}: {resp.text}"
+                        logger.error(last_exception)
+                except Exception as e:
+                    last_exception = str(e)
+                    logger.warning(f"LLM async endpoint connection error (attempt {attempt+1}): {e}")
+                    if attempt == 0:
+                        await asyncio.sleep(1.0)
+
+        raise RuntimeError(f"LLM Endpoint Unreachable or Failed: {last_exception}")
+
+    @classmethod
     def _call_inference_engine(cls, user_message: str, system_prompt: str, history: List[Dict[str, str]]) -> str:
         """
-        Calls live LLM server with multi-turn chat history matching direct Ollama sampling defaults.
+        Calls live LLM server synchronously.
         """
         import httpx
         
-        headers = {"Content-Type": "application/json"}
-        if settings.LLM_API_KEY:
-            headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+        headers = cls._build_headers()
 
-        # Construct OpenAI-standard multi-turn message sequence
         messages = [{"role": "system", "content": system_prompt}]
-        
-        # Append recent conversation turns (sanitized to prevent context explosion)
         if history:
             for turn in history[-8:]:
                 role = turn.get("role", "user")
@@ -117,7 +243,6 @@ class LLMService:
         active_settings = SettingsService.get_settings()
         selected_model = active_settings.get("llm_model") or settings.DEFAULT_MODEL
 
-        # Match natural Ollama sampling parameters
         payload = {
             "model": selected_model,
             "messages": messages,
@@ -127,7 +252,7 @@ class LLMService:
         }
 
         import time
-        logger.info(f"Sending prompt turn to Ollama model '{selected_model}' at {settings.LLM_BASE_URL}...")
+        logger.info(f"Sending prompt turn to LLM model '{selected_model}' at {settings.LLM_BASE_URL}...")
         start_t = time.time()
         last_exception = None
         for attempt in range(2):
@@ -138,7 +263,7 @@ class LLMService:
                     data = resp.json()
                     content = data["choices"][0]["message"]["content"]
                     elapsed = time.time() - start_t
-                    logger.info(f"Ollama model '{selected_model}' responded in {elapsed:.2f}s")
+                    logger.info(f"LLM model '{selected_model}' responded in {elapsed:.2f}s")
                     if content and content.strip():
                         return content.strip()
                 else:

@@ -24,4 +24,7 @@ class Settings(BaseModel):
     TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
     TWILIO_PHONE_NUMBER: str = os.getenv("TWILIO_PHONE_NUMBER", "")
 
+    # Security & Auth Settings
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "xgirlfriendgpt_secret_jwt_key_env_config")
+
 settings = Settings()
