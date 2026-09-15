@@ -22,6 +22,9 @@ class RoomCreateRequest(BaseModel):
     user_id: str = Field(..., json_schema_extra={"example": "user_123"})
     companion_ids: List[str] = Field(..., json_schema_extra={"example": ["comp_aria", "comp_kai"]})
 
+class AddParticipantRequest(BaseModel):
+    companion_id: str
+
 class RoomMessageRequest(BaseModel):
     room_id: str
     user_id: str

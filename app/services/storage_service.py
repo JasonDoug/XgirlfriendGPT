@@ -119,6 +119,23 @@ class StorageService:
             json.dump(rooms, f, indent=2)
 
     @classmethod
+    def delete_room(cls, room_id: str) -> bool:
+        cls._ensure_dirs()
+        rooms = cls.list_rooms()
+        filtered = [r for r in rooms if r["room_id"] != room_id]
+        if len(filtered) == len(rooms):
+            return False
+        with open(ROOMS_FILE, "w", encoding="utf-8") as f:
+            json.dump(filtered, f, indent=2)
+        room_chat_file = os.path.join(ROOM_CHATS_DIR, f"{room_id}.json")
+        if os.path.exists(room_chat_file):
+            try:
+                os.remove(room_chat_file)
+            except Exception:
+                pass
+        return True
+
+    @classmethod
     def list_rooms(cls, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         cls._ensure_dirs()
         if not os.path.exists(ROOMS_FILE):

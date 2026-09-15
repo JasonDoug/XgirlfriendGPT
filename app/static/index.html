@@ -33,7 +33,7 @@
             <div class="w-10 h-10 rounded-xl accent-gradient flex items-center justify-center font-bold text-xl shadow-lg text-white">🤖</div>
             <div>
                 <h1 class="text-xl font-bold text-white tracking-wide">XgirlfriendGPT</h1>
-                <p class="text-xs text-indigo-400">Personality Cloning & Persistent Character Library</p>
+                <p class="text-xs text-indigo-400">Multi-Agent Persona Engine & Group Chat Platform</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -49,7 +49,7 @@
     <!-- Main Container -->
     <div class="flex-1 flex overflow-hidden p-6 gap-6">
         
-        <!-- Left Sidebar: Saved Companions & Form -->
+        <!-- Left Sidebar: Saved Companions & Rooms -->
         <div class="w-1/2 flex flex-col gap-6 overflow-y-auto pr-2">
             
             <!-- Saved Companions Library -->
@@ -61,8 +61,27 @@
                     <span id="savedCountBadge" class="text-xs font-semibold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md">0 Characters</span>
                 </div>
                 
-                <div id="savedCompanionsList" class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                <div id="savedCompanionsList" class="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1">
                     <div class="text-xs text-slate-400 italic py-2">No saved characters yet. Create one below!</div>
+                </div>
+            </div>
+
+            <!-- Group Chat Rooms Library -->
+            <div class="glass p-5 rounded-2xl flex flex-col gap-3">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span>🏠</span> Group Chat Rooms
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span id="savedRoomsCountBadge" class="text-xs font-semibold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-md">0 Rooms</span>
+                        <button onclick="openCreateRoomModal()" class="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-1">
+                            <span>➕</span> Create Room
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="savedRoomsList" class="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1">
+                    <div class="text-xs text-slate-400 italic py-2">No rooms created yet. Click "Create Room" to start a multi-character lounge!</div>
                 </div>
             </div>
 
@@ -183,20 +202,27 @@
 
         </div>
 
-        <!-- Right Panel: Interactive Companion Chat -->
+        <!-- Right Panel: Interactive Companion / Room Chat -->
         <div class="w-1/2 glass rounded-2xl flex flex-col overflow-hidden">
             <!-- Chat Header -->
             <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80">
                 <div class="flex items-center space-x-3">
                     <div id="chatAvatar" class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow">?</div>
                     <div>
-                        <h3 id="chatHeaderName" class="font-bold text-sm text-white">No Companion Selected</h3>
-                        <p id="chatHeaderStatus" class="text-xs text-slate-400">Select or create a companion to start chatting</p>
+                        <h3 id="chatHeaderName" class="font-bold text-sm text-white">No Companion or Room Selected</h3>
+                        <p id="chatHeaderStatus" class="text-xs text-slate-400">Select a character or group room to start chatting</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
+                    <!-- Target Speaker Select (Visible in Room Mode) -->
+                    <div id="targetSpeakerContainer" class="hidden">
+                        <select id="targetSpeakerSelect" class="text-xs bg-slate-950 border border-purple-500/40 text-purple-300 font-semibold rounded-lg px-2 py-1 focus:outline-none">
+                            <option value="">🤖 Router Auto</option>
+                        </select>
+                    </div>
+
                     <label class="text-xs text-slate-300 flex items-center gap-1.5 cursor-pointer bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-slate-700 transition" title="Fast Mode: Responds immediately with text; audio & images render on-demand when clicked.">
-                        <input id="toggleFastMode" type="checkbox" class="rounded bg-slate-950 border-slate-700 text-indigo-500 focus:ring-0 cursor-pointer">
+                        <input id="toggleFastMode" type="checkbox" checked class="rounded bg-slate-950 border-slate-700 text-indigo-500 focus:ring-0 cursor-pointer">
                         <span class="font-semibold text-indigo-400">⚡ Fast Chat Mode</span>
                     </label>
                     <label class="text-xs text-slate-300 flex items-center gap-1 cursor-pointer">
@@ -207,7 +233,7 @@
 
             <!-- Messages Area -->
             <div id="messagesContainer" class="flex-1 p-4 overflow-y-auto flex flex-col gap-3">
-                <div class="text-center text-xs text-slate-400 my-4">Select or create a companion to resume interactive chat</div>
+                <div class="text-center text-xs text-slate-400 my-4">Select or create a companion or group room to resume interactive chat</div>
             </div>
 
             <!-- Input Box & Quick Actions -->
@@ -224,6 +250,123 @@
 
     </div>
 
+    <!-- Create Room Modal -->
+    <div id="createRoomModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="glass w-full max-w-md p-6 rounded-2xl flex flex-col gap-4 border border-slate-800 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🏠</span> Create Group Chat Room
+                </h3>
+                <button onclick="closeCreateRoomModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-3 text-xs">
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Room Name</label>
+                    <input id="roomNameInput" type="text" placeholder="e.g. Gaming & Tech Lounge" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Description (Optional)</label>
+                    <input id="roomDescInput" type="text" placeholder="e.g. Casual lounge with Aria and Kai" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Select Characters to Include</label>
+                    <div id="roomCharacterCheckboxes" class="flex flex-col gap-1.5 max-h-40 overflow-y-auto p-2 bg-slate-900/90 rounded-xl border border-slate-800">
+                        <div class="text-slate-400 italic text-xs">Loading characters...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-slate-800">
+                <button onclick="closeCreateRoomModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-semibold text-xs">Cancel</button>
+                <button onclick="submitCreateRoom()" class="accent-gradient text-white font-bold px-5 py-2 rounded-xl text-xs shadow-lg hover:opacity-90">Create Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Participant Modal -->
+    <div id="addParticipantModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="glass w-full max-w-sm p-6 rounded-2xl flex flex-col gap-4 border border-slate-800 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span>👤</span> Add Character to Room
+                </h3>
+                <button onclick="closeAddParticipantModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-3 text-xs">
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Select Character to Add</label>
+                    <select id="addParticipantSelect" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-slate-800">
+                <button onclick="closeAddParticipantModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-semibold text-xs">Cancel</button>
+                <button onclick="submitAddParticipant()" class="accent-gradient text-white font-bold px-5 py-2 rounded-xl text-xs shadow-lg hover:opacity-90">Add to Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="glass w-full max-w-lg p-6 rounded-2xl flex flex-col gap-5 border border-slate-800 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>⚙️</span> Model & Pipeline Settings
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <div class="flex flex-col gap-4 text-xs">
+                <!-- LLM Model Selection -->
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active LLM Model (Text & Chat)</label>
+                    <select id="settingLlmModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                </div>
+
+                <!-- Image Generation Model Selection -->
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active Image Generation Model (Checkpoints & Diffusion)</label>
+                    <select id="settingImageModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                </div>
+
+                <!-- Image Parameters Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Resolution</label>
+                        <select id="settingResolution" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white">
+                            <option value="896x1152">896x1152 (Portrait Selfie)</option>
+                            <option value="1024x1024">1024x1024 (Square)</option>
+                            <option value="1152x896">1152x896 (Landscape)</option>
+                            <option value="512x512">512x512 (Fast Draft)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">LoRA Style Overlays <span class="text-slate-500 font-normal lowercase">(hold Ctrl to select multiple)</span></label>
+                        <select id="settingLora" multiple size="3" class="w-full rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Sampling Steps: <span id="settingStepsVal" class="text-indigo-400">20</span></label>
+                        <input id="settingSteps" type="range" min="1" max="50" value="20" oninput="document.getElementById('settingStepsVal').innerText = this.value" class="w-full">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">CFG Scale: <span id="settingCfgVal" class="text-pink-400">7.0</span></label>
+                        <input id="settingCfg" type="range" min="1.0" max="15.0" step="0.5" value="7.0" oninput="document.getElementById('settingCfgVal').innerText = this.value" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-slate-800">
+                <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-semibold text-xs">Cancel</button>
+                <button onclick="saveSettings()" class="accent-gradient text-white font-bold px-5 py-2 rounded-xl text-xs shadow-lg hover:opacity-90">Save & Apply Settings</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { API } from "/static/js/api.js";
         window.API = API;
@@ -231,11 +374,23 @@
         let activeMode = "logs";
         let currentCompanionId = null;
         let currentCompanionName = "Companion";
+        
+        let currentRoomId = null;
+        let currentRoomData = null;
+        
         let chatHistory = [];
+        let allSavedCompanions = [];
 
-        function createAssistantMessageElement(content, audioUrl = null, imageUrl = null, imagePrompt = null, companionId = null) {
+        function createAssistantMessageElement(content, audioUrl = null, imageUrl = null, imagePrompt = null, companionId = null, speakerName = null) {
             const compMsgDiv = document.createElement("div");
             compMsgDiv.className = "bg-slate-900 border border-slate-800 p-3.5 rounded-2xl max-w-xs self-start text-sm text-slate-100 shadow-sm flex flex-col gap-2 font-medium";
+
+            if (speakerName) {
+                const nameHeader = document.createElement("div");
+                nameHeader.className = "text-xs font-bold text-indigo-400 flex items-center gap-1.5 pb-1 border-b border-slate-800/80";
+                nameHeader.innerHTML = `<span>🤖</span> ${speakerName}`;
+                compMsgDiv.appendChild(nameHeader);
+            }
 
             const textNode = document.createElement("div");
             textNode.innerText = content;
@@ -256,7 +411,6 @@
 
             playBtn.onclick = async () => {
                 if (!activeAudioUrl) {
-                    // Trigger on-demand voice synthesis for this turn
                     playBtn.innerHTML = "<span>🔊</span> Synthesizing...";
                     try {
                         const synthResp = await fetch("/api/v1/voice/synthesize", {
@@ -299,7 +453,6 @@
             };
             actionBar.appendChild(playBtn);
 
-
             // 2. Inline Photo Button & Embedded Container
             const photoBtn = document.createElement("button");
             photoBtn.type = "button";
@@ -329,7 +482,6 @@
 
             photoBtn.onclick = async () => {
                 if (!activeImageUrl) {
-                    // Trigger on-demand selfie generation for this message
                     photoBtn.innerHTML = "<span>📸</span> Rendering Photo...";
                     imgContainer.classList.remove("hidden");
                     imgContainer.innerHTML = `
@@ -360,7 +512,6 @@
                     return;
                 }
 
-                // Toggle visibility if image already exists
                 if (imgContainer.classList.contains("hidden")) {
                     imgContainer.classList.remove("hidden");
                     photoBtn.innerHTML = "<span>🙈</span> Hide Photo";
@@ -377,27 +528,27 @@
             return compMsgDiv;
         }
 
-        // Load saved companions on page load
+        // Load saved companions and rooms on page load
         window.addEventListener("DOMContentLoaded", () => {
-
             loadSavedCompanionsList();
+            loadSavedRoomsList();
         });
 
         async function loadSavedCompanionsList() {
             try {
                 const res = await fetch("/api/v1/clone/list");
                 if (!res.ok) return;
-                const companions = await res.json();
+                allSavedCompanions = await res.json();
                 
                 const listEl = document.getElementById("savedCompanionsList");
-                document.getElementById("savedCountBadge").innerText = `${companions.length} Character${companions.length === 1 ? '' : 's'}`;
+                document.getElementById("savedCountBadge").innerText = `${allSavedCompanions.length} Character${allSavedCompanions.length === 1 ? '' : 's'}`;
 
-                if (!companions.length) {
+                if (!allSavedCompanions.length) {
                     listEl.innerHTML = `<div class="text-xs text-slate-400 italic py-2">No saved characters yet. Create one below!</div>`;
                     return;
                 }
 
-                listEl.innerHTML = companions.map(c => `
+                listEl.innerHTML = allSavedCompanions.map(c => `
                     <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl hover:border-indigo-500/50 transition cursor-pointer group" onclick="loadCompanion('${c.companion_id}')">
                         <div class="flex items-center space-x-3">
                             <div class="w-8 h-8 rounded-lg bg-indigo-600/80 flex items-center justify-center font-bold text-white text-xs">
@@ -419,6 +570,53 @@
             }
         }
 
+        async function loadSavedRoomsList() {
+            try {
+                const res = await fetch("/api/v1/rooms");
+                if (!res.ok) return;
+                const rooms = await res.json();
+
+                const listEl = document.getElementById("savedRoomsList");
+                document.getElementById("savedRoomsCountBadge").innerText = `${rooms.length} Room${rooms.length === 1 ? '' : 's'}`;
+
+                if (!rooms.length) {
+                    listEl.innerHTML = `<div class="text-xs text-slate-400 italic py-2">No rooms created yet. Click "Create Room" to start a multi-character lounge!</div>`;
+                    return;
+                }
+
+                listEl.innerHTML = rooms.map(r => {
+                    const participantBadges = r.participants.map(p => 
+                        `<span class="bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded text-[10px] font-medium">${p.name}</span>`
+                    ).join(" ");
+
+                    return `
+                        <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl hover:border-purple-500/50 transition cursor-pointer group" onclick="loadRoom('${r.room_id}')">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-purple-600/80 flex items-center justify-center font-bold text-white text-xs">
+                                    🏠
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-white group-hover:text-purple-400 transition">${r.name}</div>
+                                    <div class="flex items-center gap-1 mt-0.5">${participantBadges}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openAddParticipantModal(event, '${r.room_id}')" class="text-xs bg-slate-800 hover:bg-purple-600 text-purple-300 hover:text-white px-2 py-1 rounded-lg border border-slate-700 transition" title="Add Character to Room">
+                                    👤+
+                                </button>
+                                <button onclick="deleteRoom(event, '${r.room_id}')" class="text-slate-500 hover:text-red-400 p-1 text-xs transition" title="Delete Room">
+                                    ❌
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+            } catch (err) {
+                console.error("Failed to load saved rooms list:", err);
+            }
+        }
+
         async function loadCompanion(companionId) {
             try {
                 const profileRes = await fetch(`/api/v1/clone/profile/${companionId}`);
@@ -427,21 +625,21 @@
 
                 currentCompanionId = profile.companion_id;
                 currentCompanionName = profile.name;
+                currentRoomId = null;
+                currentRoomData = null;
 
-                // Load stored chat history from disk
+                document.getElementById("targetSpeakerContainer").classList.add("hidden");
+
                 const historyRes = await fetch(`/api/v1/chat/history/${companionId}`);
                 chatHistory = historyRes.ok ? await historyRes.json() : [];
 
-                // Render Profile Panel UI
                 renderProfilePanel(profile);
 
-                // Enable Chat Interface & Restore Messages
                 document.getElementById("chatAvatar").innerText = profile.name[0].toUpperCase();
                 document.getElementById("chatHeaderName").innerText = profile.name;
                 document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${profile.name} (${profile.companion_type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
                 document.getElementById("messageInput").disabled = false;
                 document.getElementById("sendBtn").disabled = false;
-
 
                 const msgsContainer = document.getElementById("messagesContainer");
                 msgsContainer.innerHTML = `
@@ -451,7 +649,6 @@
                     </div>
                 `;
 
-                // Re-render past conversation turns
                 chatHistory.forEach(turn => {
                     if (turn.role === "user") {
                         const msgDiv = document.createElement("div");
@@ -472,9 +669,71 @@
 
                 msgsContainer.scrollTop = msgsContainer.scrollHeight;
 
-
             } catch (err) {
                 alert("Error loading character: " + err.message);
+            }
+        }
+
+        async function loadRoom(roomId) {
+            try {
+                const roomRes = await fetch(`/api/v1/rooms/${roomId}`);
+                if (!roomRes.ok) throw new Error("Room not found");
+                const room = await roomRes.json();
+
+                currentRoomId = room.room_id;
+                currentRoomData = room;
+                currentCompanionId = null;
+
+                document.getElementById("profileContainer").classList.add("hidden");
+
+                // Render Target Speaker Selector
+                const targetContainer = document.getElementById("targetSpeakerContainer");
+                const targetSelect = document.getElementById("targetSpeakerSelect");
+                targetSelect.innerHTML = `<option value="">🤖 Router Auto</option>` + 
+                    room.participants.map(p => `<option value="${p.companion_id}">@${p.name}</option>`).join("");
+                targetContainer.classList.remove("hidden");
+
+                // Update Chat Header
+                document.getElementById("chatAvatar").innerText = "🏠";
+                document.getElementById("chatHeaderName").innerText = room.name;
+                const pNames = room.participants.map(p => p.name).join(", ");
+                document.getElementById("chatHeaderStatus").innerText = `Multi-Persona Room (${room.participants.length} Characters: ${pNames})`;
+
+                document.getElementById("messageInput").disabled = false;
+                document.getElementById("sendBtn").disabled = false;
+
+                // Load Room Conversation History
+                const historyRes = await fetch(`/api/v1/rooms/${roomId}/history`);
+                const roomHistory = historyRes.ok ? await historyRes.json() : [];
+
+                const msgsContainer = document.getElementById("messagesContainer");
+                msgsContainer.innerHTML = `
+                    <div class="text-center text-xs text-purple-400 my-2">Group Room Chat Active: "${room.name}" [${pNames}]</div>
+                `;
+
+                roomHistory.forEach(turn => {
+                    if (turn.role === "user") {
+                        const msgDiv = document.createElement("div");
+                        msgDiv.className = "bg-purple-600 p-3 rounded-2xl max-w-xs self-end text-sm text-white shadow-sm font-medium";
+                        msgDiv.innerText = turn.content;
+                        msgsContainer.appendChild(msgDiv);
+                    } else {
+                        const compDiv = createAssistantMessageElement(
+                            turn.content, 
+                            turn.audio_url || null, 
+                            turn.image_url || null, 
+                            null,
+                            turn.speaker_id,
+                            turn.speaker_name
+                        );
+                        msgsContainer.appendChild(compDiv);
+                    }
+                });
+
+                msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+            } catch (err) {
+                alert("Error loading room: " + err.message);
             }
         }
 
@@ -496,6 +755,146 @@
                 loadSavedCompanionsList();
             } catch (err) {
                 alert("Failed to delete character");
+            }
+        }
+
+        async function deleteRoom(e, roomId) {
+            e.stopPropagation();
+            if (!confirm("Are you sure you want to delete this room?")) return;
+
+            try {
+                await fetch(`/api/v1/rooms/${roomId}`, { method: "DELETE" });
+                if (currentRoomId === roomId) {
+                    currentRoomId = null;
+                    currentRoomData = null;
+                    document.getElementById("targetSpeakerContainer").classList.add("hidden");
+                    document.getElementById("chatHeaderName").innerText = "No Companion or Room Selected";
+                    document.getElementById("messageInput").disabled = true;
+                    document.getElementById("sendBtn").disabled = true;
+                    document.getElementById("messagesContainer").innerHTML = `<div class="text-center text-xs text-slate-400 my-4">Select a character or group room to start chatting</div>`;
+                }
+                loadSavedRoomsList();
+            } catch (err) {
+                alert("Failed to delete room");
+            }
+        }
+
+        function openCreateRoomModal() {
+            const checkboxesEl = document.getElementById("roomCharacterCheckboxes");
+            if (!allSavedCompanions.length) {
+                checkboxesEl.innerHTML = `<div class="text-slate-400 italic text-xs">No saved characters found. Please create characters first!</div>`;
+            } else {
+                checkboxesEl.innerHTML = allSavedCompanions.map(c => `
+                    <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-800/80 p-1.5 rounded-lg transition text-slate-200">
+                        <input type="checkbox" value="${c.companion_id}" class="room-comp-checkbox rounded bg-slate-950 border-slate-700 text-purple-500 focus:ring-0">
+                        <span class="font-semibold text-xs">${c.name} (${c.companion_type})</span>
+                    </label>
+                `).join("");
+            }
+            document.getElementById("createRoomModal").classList.remove("hidden");
+        }
+
+        function closeCreateRoomModal() {
+            document.getElementById("createRoomModal").classList.add("hidden");
+        }
+
+        async function submitCreateRoom() {
+            const name = document.getElementById("roomNameInput").value.trim();
+            const description = document.getElementById("roomDescInput").value.trim();
+            
+            const selectedCheckboxes = Array.from(document.querySelectorAll(".room-comp-checkbox:checked")).map(cb => cb.value);
+
+            if (!name) {
+                alert("Please enter a room name.");
+                return;
+            }
+            if (!selectedCheckboxes.length) {
+                alert("Please select at least one character for the room.");
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/v1/rooms/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description || null,
+                        user_id: "default_user",
+                        companion_ids: selectedCheckboxes
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || "Failed to create room");
+                }
+
+                const newRoom = await response.json();
+                closeCreateRoomModal();
+                loadSavedRoomsList();
+                loadRoom(newRoom.room_id);
+
+            } catch (err) {
+                alert("Error creating room: " + err.message);
+            }
+        }
+
+        let targetRoomForParticipant = null;
+
+        function openAddParticipantModal(e, roomId) {
+            e.stopPropagation();
+            targetRoomForParticipant = roomId;
+
+            const room = currentRoomData && currentRoomData.room_id === roomId ? currentRoomData : null;
+            const existingIds = room ? room.participants.map(p => p.companion_id) : [];
+
+            const selectEl = document.getElementById("addParticipantSelect");
+            const availableCompanions = allSavedCompanions.filter(c => !existingIds.includes(c.companion_id));
+
+            if (!availableCompanions.length) {
+                selectEl.innerHTML = `<option value="">No available characters to add</option>`;
+            } else {
+                selectEl.innerHTML = availableCompanions.map(c => 
+                    `<option value="${c.companion_id}">${c.name} (${c.companion_type})</option>`
+                ).join("");
+            }
+
+            document.getElementById("addParticipantModal").classList.remove("hidden");
+        }
+
+        function closeAddParticipantModal() {
+            document.getElementById("addParticipantModal").classList.add("hidden");
+        }
+
+        async function submitAddParticipant() {
+            if (!targetRoomForParticipant) return;
+            const companionId = document.getElementById("addParticipantSelect").value;
+            if (!companionId) {
+                alert("Please select a character to add.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/rooms/${targetRoomForParticipant}/participants`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ companion_id: companionId })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || "Failed to add character to room");
+                }
+
+                closeAddParticipantModal();
+                loadSavedRoomsList();
+                if (currentRoomId === targetRoomForParticipant) {
+                    loadRoom(targetRoomForParticipant);
+                }
+
+            } catch (err) {
+                alert("Error adding character to room: " + err.message);
             }
         }
 
@@ -642,21 +1041,19 @@
                 const profile = await response.json();
                 currentCompanionId = profile.companion_id;
                 currentCompanionName = profile.name;
+                currentRoomId = null;
+                currentRoomData = null;
                 chatHistory = [];
 
-                // Render Profile UI & Refresh Library
                 renderProfilePanel(profile);
                 loadSavedCompanionsList();
 
-                // Enable Chat
                 document.getElementById("chatAvatar").innerText = name[0].toUpperCase();
                 document.getElementById("chatHeaderName").innerText = name;
                 document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${name} (${type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
                 document.getElementById("messageInput").disabled = false;
                 document.getElementById("sendBtn").disabled = false;
 
-
-                // Clear Chat Messages & Start Fresh Session
                 const msgsContainer = document.getElementById("messagesContainer");
                 msgsContainer.innerHTML = `
                     <div class="text-center text-xs text-indigo-400 my-2">Companion "${name}" saved & activated with Qdrant vector memory</div>
@@ -677,73 +1074,114 @@
             e.preventDefault();
             const input = document.getElementById("messageInput");
             const message = input.value.trim();
-            if (!message || !currentCompanionId) return;
+            if (!message || (!currentCompanionId && !currentRoomId)) return;
 
             input.value = "";
             const msgsContainer = document.getElementById("messagesContainer");
 
-            // Append User Message
-            const userMsgDiv = document.createElement("div");
-            userMsgDiv.className = "bg-indigo-600 p-3 rounded-2xl max-w-xs self-end text-sm text-white shadow-sm font-medium";
-            userMsgDiv.innerText = message;
-            msgsContainer.appendChild(userMsgDiv);
-            msgsContainer.scrollTop = msgsContainer.scrollHeight;
-
             const enableMemory = document.getElementById("toggleMemory").checked;
             const fastMode = document.getElementById("toggleFastMode") ? document.getElementById("toggleFastMode").checked : false;
 
-            try {
-                const response = await fetch("/api/v1/chat/message", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        companion_id: currentCompanionId,
-                        user_id: "user_" + currentCompanionId,
-                        message: message,
-                        history: chatHistory,
-                        enable_memory: enableMemory,
-                        enable_vision: true,
-                        fast_mode: fastMode
-                    })
-                });
+            if (currentRoomId) {
+                // Group Room Chat Message
+                const targetId = document.getElementById("targetSpeakerSelect") ? document.getElementById("targetSpeakerSelect").value : null;
 
-                const data = await response.json();
-
-                // Store turns in multi-turn history buffer
-                chatHistory.push({ role: "user", content: message });
-                chatHistory.push({ role: "assistant", content: data.reply });
-
-                if (chatHistory.length > 30) {
-                    chatHistory = chatHistory.slice(-30);
-                }
-
-                // Append Memory Context Notice if retrieved
-                if (data.retrieved_memories && data.retrieved_memories.length > 0) {
-                    const memNotice = document.createElement("div");
-                    memNotice.className = "text-center text-xs text-amber-300 bg-amber-500/10 py-1 px-3 rounded-full self-center border border-amber-500/30";
-                    memNotice.innerText = `🧠 Qdrant Memory Recalled: "${data.retrieved_memories[0]}"`;
-                    msgsContainer.appendChild(memNotice);
-                }
-
-                // Append Companion Reply
-                const imageCmd = data.image_command || (data.image_url ? { generate_image: true, prompt: "Photo", image_url: data.image_url } : null);
-                const imgUrl = imageCmd ? imageCmd.image_url : null;
-                const imgPrompt = imageCmd ? imageCmd.prompt : null;
-
-                const compMsgDiv = createAssistantMessageElement(
-                    data.reply, 
-                    data.audio_url, 
-                    imgUrl, 
-                    imgPrompt, 
-                    currentCompanionId
-                );
-
-                msgsContainer.appendChild(compMsgDiv);
+                const userMsgDiv = document.createElement("div");
+                userMsgDiv.className = "bg-purple-600 p-3 rounded-2xl max-w-xs self-end text-sm text-white shadow-sm font-medium";
+                userMsgDiv.innerText = message;
+                msgsContainer.appendChild(userMsgDiv);
                 msgsContainer.scrollTop = msgsContainer.scrollHeight;
 
+                try {
+                    const response = await fetch("/api/v1/rooms/message", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            room_id: currentRoomId,
+                            user_id: "default_user",
+                            message: message,
+                            target_companion_id: targetId || null,
+                            enable_memory: enableMemory
+                        })
+                    });
 
-            } catch (err) {
-                console.error(err);
+                    if (!response.ok) throw new Error("Failed to send room message");
+
+                    const data = await response.json();
+
+                    const compMsgDiv = createAssistantMessageElement(
+                        data.reply, 
+                        data.audio_url || null, 
+                        data.image_url || null, 
+                        null, 
+                        data.speaker_id,
+                        data.speaker_name
+                    );
+
+                    msgsContainer.appendChild(compMsgDiv);
+                    msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+                } catch (err) {
+                    console.error("Room message error:", err);
+                }
+
+            } else {
+                // Single Companion Chat Message
+                const userMsgDiv = document.createElement("div");
+                userMsgDiv.className = "bg-indigo-600 p-3 rounded-2xl max-w-xs self-end text-sm text-white shadow-sm font-medium";
+                userMsgDiv.innerText = message;
+                msgsContainer.appendChild(userMsgDiv);
+                msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+                try {
+                    const response = await fetch("/api/v1/chat/message", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            companion_id: currentCompanionId,
+                            user_id: "user_" + currentCompanionId,
+                            message: message,
+                            history: chatHistory,
+                            enable_memory: enableMemory,
+                            enable_vision: true,
+                            fast_mode: fastMode
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    chatHistory.push({ role: "user", content: message });
+                    chatHistory.push({ role: "assistant", content: data.reply });
+
+                    if (chatHistory.length > 30) {
+                        chatHistory = chatHistory.slice(-30);
+                    }
+
+                    if (data.retrieved_memories && data.retrieved_memories.length > 0) {
+                        const memNotice = document.createElement("div");
+                        memNotice.className = "text-center text-xs text-amber-300 bg-amber-500/10 py-1 px-3 rounded-full self-center border border-amber-500/30";
+                        memNotice.innerText = `🧠 Qdrant Memory Recalled: "${data.retrieved_memories[0]}"`;
+                        msgsContainer.appendChild(memNotice);
+                    }
+
+                    const imageCmd = data.image_command || (data.image_url ? { generate_image: true, prompt: "Photo", image_url: data.image_url } : null);
+                    const imgUrl = imageCmd ? imageCmd.image_url : null;
+                    const imgPrompt = imageCmd ? imageCmd.prompt : null;
+
+                    const compMsgDiv = createAssistantMessageElement(
+                        data.reply, 
+                        data.audio_url, 
+                        imgUrl, 
+                        imgPrompt, 
+                        currentCompanionId
+                    );
+
+                    msgsContainer.appendChild(compMsgDiv);
+                    msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+                } catch (err) {
+                    console.error(err);
+                }
             }
         }
 
@@ -769,33 +1207,28 @@
                 const modelsData = await modelsRes.json();
                 const currentData = await currentRes.json();
 
-                // Populate LLM Select
                 const llmSelect = document.getElementById("settingLlmModel");
                 llmSelect.innerHTML = modelsData.llm_models.map(m => 
                     `<option value="${m.id}" ${m.id === currentData.llm_model ? 'selected' : ''}>${m.label}</option>`
                 ).join("");
 
-                // Populate Image Model Select
                 const imgSelect = document.getElementById("settingImageModel");
                 imgSelect.innerHTML = modelsData.image_models.map(m => 
                     `<option value="${m.id}" ${m.id === currentData.image_model ? 'selected' : ''}>${m.label}</option>`
                 ).join("");
 
-                // Populate LoRA Select (Multi-select)
                 const currentLoras = (currentData.selected_lora || "").split(",").map(s => s.trim());
                 const loraSelect = document.getElementById("settingLora");
                 loraSelect.innerHTML = modelsData.loras.map(l => 
                     `<option value="${l.id}" ${(currentLoras.includes(l.id) || (l.id === "" && (currentLoras.length === 0 || currentLoras[0] === ""))) ? 'selected' : ''}>${l.label}</option>`
                 ).join("");
 
-                // Populate Resolution
                 const resVal = `${currentData.image_width}x${currentData.image_height}`;
                 const resSelect = document.getElementById("settingResolution");
                 if (Array.from(resSelect.options).some(o => o.value === resVal)) {
                     resSelect.value = resVal;
                 }
 
-                // Populate Sliders
                 document.getElementById("settingSteps").value = currentData.image_steps || 20;
                 document.getElementById("settingStepsVal").innerText = currentData.image_steps || 20;
 
@@ -852,7 +1285,15 @@
         window.switchMode = switchMode;
         window.clonePersonality = clonePersonality;
         window.loadCompanion = loadCompanion;
+        window.loadRoom = loadRoom;
         window.deleteCompanion = deleteCompanion;
+        window.deleteRoom = deleteRoom;
+        window.openCreateRoomModal = openCreateRoomModal;
+        window.closeCreateRoomModal = closeCreateRoomModal;
+        window.submitCreateRoom = submitCreateRoom;
+        window.openAddParticipantModal = openAddParticipantModal;
+        window.closeAddParticipantModal = closeAddParticipantModal;
+        window.submitAddParticipant = submitAddParticipant;
         window.updateCompanionSettings = updateCompanionSettings;
         window.sendMessage = sendMessage;
         window.renderProfilePanel = renderProfilePanel;
@@ -861,64 +1302,5 @@
         window.closeSettingsModal = closeSettingsModal;
         window.saveSettings = saveSettings;
     </script>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
-        <div class="glass w-full max-w-lg p-6 rounded-2xl flex flex-col gap-5 border border-slate-800 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span>⚙️</span> Model & Pipeline Settings
-                </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
-            </div>
-
-            <div class="flex flex-col gap-4 text-xs">
-                <!-- LLM Model Selection -->
-                <div>
-                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active LLM Model (Text & Chat)</label>
-                    <select id="settingLlmModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
-                </div>
-
-                <!-- Image Generation Model Selection -->
-                <div>
-                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active Image Generation Model (Checkpoints & Diffusion)</label>
-                    <select id="settingImageModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
-                </div>
-
-                <!-- Image Parameters Grid -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Resolution</label>
-                        <select id="settingResolution" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white">
-                            <option value="896x1152">896x1152 (Portrait Selfie)</option>
-                            <option value="1024x1024">1024x1024 (Square)</option>
-                            <option value="1152x896">1152x896 (Landscape)</option>
-                            <option value="512x512">512x512 (Fast Draft)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">LoRA Style Overlays <span class="text-slate-500 font-normal lowercase">(hold Ctrl to select multiple)</span></label>
-                        <select id="settingLora" multiple size="3" class="w-full rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Sampling Steps: <span id="settingStepsVal" class="text-indigo-400">20</span></label>
-                        <input id="settingSteps" type="range" min="1" max="50" value="20" oninput="document.getElementById('settingStepsVal').innerText = this.value" class="w-full">
-                    </div>
-                    <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">CFG Scale: <span id="settingCfgVal" class="text-pink-400">7.0</span></label>
-                        <input id="settingCfg" type="range" min="1.0" max="15.0" step="0.5" value="7.0" oninput="document.getElementById('settingCfgVal').innerText = this.value" class="w-full">
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-2 border-t border-slate-800">
-                <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-semibold text-xs">Cancel</button>
-                <button onclick="saveSettings()" class="accent-gradient text-white font-bold px-5 py-2 rounded-xl text-xs shadow-lg hover:opacity-90">Save & Apply Settings</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

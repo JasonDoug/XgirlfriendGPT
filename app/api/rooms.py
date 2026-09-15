@@ -7,6 +7,7 @@ from app.models.room import (
     Room, 
     RoomParticipant, 
     RoomCreateRequest, 
+    AddParticipantRequest,
     RoomMessageRequest, 
     RoomMessageResponse
 )
@@ -67,6 +68,53 @@ def get_room(room_id: str):
     if not raw_room:
         raise HTTPException(status_code=404, detail="Room not found.")
     return Room(**raw_room)
+
+@router.post("/{room_id}/participants", response_model=Room)
+def add_room_participant(room_id: str, request: AddParticipantRequest):
+    """
+    Adds a character participant into an existing room.
+    """
+    raw_room = StorageService.get_room_by_id(room_id)
+    if not raw_room:
+        raise HTTPException(status_code=404, detail="Room not found.")
+
+    comp_data = StorageService.get_companion_by_id(request.companion_id)
+    if not comp_data:
+        raise HTTPException(status_code=404, detail=f"Companion '{request.companion_id}' not found.")
+
+    room = Room(**raw_room)
+    existing_ids = [p.companion_id for p in room.participants]
+    if request.companion_id not in existing_ids:
+        room.participants.append(
+            RoomParticipant(
+                companion_id=request.companion_id,
+                name=comp_data.get("name", "Companion")
+            )
+        )
+        room.updated_at = datetime.utcnow()
+        StorageService.save_room(room.model_dump(mode="json"))
+
+    return room
+
+@router.delete("/{room_id}")
+def delete_room(room_id: str):
+    """
+    Deletes a room by ID.
+    """
+    success = StorageService.delete_room(room_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Room not found.")
+    return {"status": "success", "message": f"Room '{room_id}' deleted."}
+
+@router.get("/{room_id}/history", response_model=List[Dict[str, Any]])
+def get_room_history(room_id: str, limit: int = 50):
+    """
+    Retrieves stored room conversation history.
+    """
+    raw_room = StorageService.get_room_by_id(room_id)
+    if not raw_room:
+        raise HTTPException(status_code=404, detail="Room not found.")
+    return StorageService.get_room_history(room_id, limit=limit)
 
 @router.post("/message", response_model=RoomMessageResponse)
 async def send_room_message(request: RoomMessageRequest):
