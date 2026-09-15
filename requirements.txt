@@ -1,55 +1,82 @@
-annotated-doc==0.0.5
-annotated-types==0.8.0
-anyio==4.15.1
-APScheduler==3.11.3
-certifi==2026.7.22
-charset-normalizer==3.5.1
-click==8.5.0
+# XgirlfriendGPT - Core Dependencies
+# =============================================================================
+# Web Framework
 fastapi==0.141.1
-fastembed==0.8.0
-filelock==3.32.6
-flatbuffers==25.12.19
-fsspec==2026.7.0
-grpcio==1.83.1
+uvicorn[standard]==0.52.4
+starlette==1.6.0
+httpx==0.28.1
+httpcore==1.0.9
 h11==0.16.0
 h2==4.4.1
-hf-xet==1.6.0
-hpack==4.2.0
-httpcore==1.0.9
-httpx==0.28.1
-huggingface_hub==1.31.0
-hyperframe==6.1.0
-idna==3.19
-iniconfig==2.3.0
-loguru==0.7.3
-mmh3==5.3.0
-numpy==2.5.3
-onnxruntime==1.30.0
-packaging==26.3
-pillow==12.3.0
-pluggy==1.6.0
-portalocker==3.2.0
-protobuf==7.36.1
-py_rust_stemmers==0.1.8
+
+# Data Validation & Settings
 pydantic==2.13.5
 pydantic_core==2.46.5
-Pygments==2.21.0
-pytest==9.1.1
-python-multipart==0.0.32
-PyYAML==6.0.3
-qdrant-client==1.19.0
-requests==2.34.2
-setuptools==84.0.0
-starlette==1.6.0
-tokenizers==0.23.2
-tqdm==4.70.1
+pydantic-settings==2.10.0
+annotated-types==0.8.0
+typing-extensions==4.16.0
 typing-inspection==0.4.4
-typing_extensions==4.16.0
-tzlocal==5.4.4
-urllib3==2.7.0
-uvicorn==0.52.4
-wheel==0.48.0
+
+# Database & Vector Store
+qdrant-client==1.19.0
+fastembed==0.8.0
+onnxruntime==1.30.0
+tokenizers==0.23.2
+huggingface-hub==1.31.0
+hf-xet==1.6.0
+
+# Graph & Orchestration
 langgraph==1.2.11
+
+# Text-to-Speech
 edge-tts==7.2.8
 
+# Task Scheduling
+APScheduler==3.11.3
 
+# Utilities
+loguru==0.7.3
+python-multipart==0.0.32
+PyYAML==6.0.3
+click==8.5.0
+requests==2.34.2
+tqdm==4.70.1
+filelock==3.32.6
+portalocker==3.2.0
+mmh3==5.3.0
+py-rust-stemmers==0.1.8
+certifi==2026.7.22
+charset-normalizer==3.5.1
+idna==3.19
+urllib3==2.7.0
+tzlocal==5.4.4
+
+# Low-level Dependencies
+grpcio==1.83.1
+protobuf==7.36.1
+flatbuffers==25.12.19
+fsspec==2026.7.0
+numpy==2.5.3
+pillow==12.3.0
+packaging==26.3
+pluggy==1.6.0
+iniconfig==2.3.0
+Pygments==2.21.0
+annotated-doc==0.0.5
+hyperframe==6.1.0
+hpack==4.2.0
+setuptools==84.0.0
+wheel==0.48.0
+
+# =============================================================================
+# Development Dependencies (install with: pip install -r requirements-dev.txt)
+# =============================================================================
+# pytest==9.1.1
+# pytest-asyncio==0.23.0
+# pytest-cov==4.1.0
+# black==24.4.0
+# ruff==0.4.0
+# mypy==1.9.0
+# pre-commit==3.7.0
+# pip-audit==2.7.0
+# bandit==1.7.0

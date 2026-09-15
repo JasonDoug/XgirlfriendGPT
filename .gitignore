@@ -15,14 +15,35 @@ htmlcov/
 *.log
 uvicorn.log
 
+# Environment Files (contains secrets)
+.env
+.env.local
+.env.*.local
+
 # Static Generated Images & Temporary Storage
 app/static/generated/
+app/static/audio/tts_*.mp3
 data/chats/*.json
 data/room_chats/*.json
 !data/companions.json
 !data/rooms.json
 
+# Qdrant Database
+data/qdrant_db/
+
 # IDE & OS
 .vscode/
 .idea/
 .DS_Store
+
+# Build & Distribution
+dist/
+build/
+*.egg-info/
+
+# Type Checking
+.mypy_cache/
+.ruff_cache/
+
+# Coverage Reports
+coverage.xml

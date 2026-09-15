@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # XgirlfriendGPT Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: xgirlfriendgpt-app
+    ports:
+      - "8005:8005"
+    environment:
+      - ENV=production
+      - LLM_PROVIDER=ollama
+      - LLM_BASE_URL=http://ollama:11434/v1
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-R4C3R/qwen3-8b-heretic:q8_0}
+      - QDRANT_HOST=qdrant
+      - QDRANT_COLLECTION=companion_memories
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+    volumes:
+      - ./data:/app/data
+      - ./app/static:/app/app/static
+    depends_on:
+      - ollama
+      - qdrant
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health/liveness"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Ollama LLM Server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: xgirlfriendgpt-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: xgirlfriendgpt-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ComfyUI Image Generation (Optional - requires GPU)
+  # Uncomment and configure for image generation
+  # comfyui:
+  #   image: comfyui/comfyui:latest
+  #   container_name: xgirlfriendgpt-comfyui
+  #   ports:
+  #     - "8188:8188"
+  #   volumes:
+  #     - ./models:/comfyui/models
+  #     - comfyui_output:/comfyui/output
+  #   environment:
+  #     - COMFYUI_ARGS=--listen 0.0.0.0 --port 8188
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   restart: unless-stopped
+
+volumes:
+  ollama_data:
+  qdrant_data:
+  # comfyui_output:
+
+# Network configuration
+networks:
+  default:
+    name: xgirlfriendgpt-network

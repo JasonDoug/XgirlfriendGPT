@@ -1,0 +1,24 @@
+# XgirlfriendGPT - Development Dependencies
+# Install with: pip install -r requirements-dev.txt
+# (Requires base requirements.txt first)
+
+# Testing
+pytest==9.1.1
+pytest-asyncio==0.23.0
+pytest-cov==4.1.0
+
+# Code Quality
+black==24.4.0
+ruff==0.4.0
+mypy==1.9.0
+
+# Pre-commit Hooks
+pre-commit==3.7.0
+
+# Security Scanning
+pip-audit==2.7.0
+bandit==1.7.0
+
+# Type Stubs (if needed)
+types-requests==2.31.0
+types-PyYAML==6.0.0

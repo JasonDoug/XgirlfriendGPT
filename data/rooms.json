@@ -198,5 +198,225 @@
     ],
     "created_at": "2026-09-14T20:52:02.672623",
     "updated_at": "2026-09-14T20:52:02.672626"
+  },
+  {
+    "room_id": "room_4be3df234d",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "4aa9c03e-d714-4894-ab9d-772c82b3e3c7",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "5e9915ad-6a06-492a-bbda-def44e210ad1",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-14T21:41:12.926141",
+    "updated_at": "2026-09-14T21:41:12.926144"
+  },
+  {
+    "room_id": "room_ca36d13457",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "cf15acc5-5d93-4ac6-8e1d-3b9a63014ebe",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "e1c9d4f8-5aa6-4e00-b44d-732c47fa33cb",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-14T21:50:45.461187",
+    "updated_at": "2026-09-14T21:50:45.461190"
+  },
+  {
+    "room_id": "room_dbd0279c18",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "733df981-0d4b-4a12-bf01-e1ebf2616ddd",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "c0b52222-2bec-44c1-9c24-c90cf70960fe",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-14T21:53:38.669450",
+    "updated_at": "2026-09-14T21:53:38.669454"
+  },
+  {
+    "room_id": "room_743fabf26b",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "39a66eda-f9eb-435a-8081-1ee9bf474fc3",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "5e8864dc-3d85-4a32-9b02-eb7413eceb95",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-14T23:18:41.808181",
+    "updated_at": "2026-09-14T23:18:41.808186"
+  },
+  {
+    "room_id": "room_6d084636f2",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "5049a17a-85aa-46b3-a063-8dd43c40cc8b",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "13c6533b-bfa2-4eb6-b991-389824c8e52f",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-14T23:22:03.107828",
+    "updated_at": "2026-09-14T23:22:03.107831"
+  },
+  {
+    "room_id": "room_b5288968de",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "c863849e-63eb-41bb-8df5-bd772288a397",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "3b0755af-09a9-463e-835c-83dd54bfa617",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T01:00:49.121983",
+    "updated_at": "2026-09-15T01:00:49.121986"
+  },
+  {
+    "room_id": "room_eda81c627f",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "aaea56c3-2f7b-49c2-b100-7dff723ba190",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "b04fe75a-1cc7-4a33-83ec-8ad012b01ae0",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T01:01:23.213831",
+    "updated_at": "2026-09-15T01:01:23.213840"
+  },
+  {
+    "room_id": "room_0fdffcec1d",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "f6c9ad4b-5999-4382-bfca-6050103bb378",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "ccc11e52-f36e-477d-b835-a36fdf592f6f",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T01:01:37.802272",
+    "updated_at": "2026-09-15T01:01:37.802277"
+  },
+  {
+    "room_id": "room_ba8f2ec960",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "b225d355-f7b0-4aa5-8049-aa5c17a75b91",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "a3ae3c6c-b215-40aa-a636-074c433f7f70",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T01:05:06.562289",
+    "updated_at": "2026-09-15T01:05:06.562294"
+  },
+  {
+    "room_id": "room_3e6c727b4d",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "6df38a2d-12b9-406c-aee9-aeef591f76d4",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "b5c52aa7-a4bf-4cad-a9d8-1f25fb69adcc",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T01:31:29.343618",
+    "updated_at": "2026-09-15T01:31:29.343621"
+  },
+  {
+    "room_id": "room_c1f5d46523",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "c7a6b437-ae3f-43de-b912-23202b2c57ef",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "6bea4812-16ff-490c-9548-9911ba731669",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T01:34:49.460372",
+    "updated_at": "2026-09-15T01:34:49.460374"
   }
 ]
