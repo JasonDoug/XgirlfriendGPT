@@ -1,3 +1,4 @@
+import re
 from typing import Dict, Any
 from app.graph.state import CompanionState
 
@@ -7,6 +8,13 @@ class RouterAgent:
     Determines which companion persona should respond using name recognition,
     semantic topic matching, and conversation flow awareness.
     """
+
+    @classmethod
+    def _is_word_match(cls, term: str, text: str) -> bool:
+        if not term or not text:
+            return False
+        pattern = r'\b' + re.escape(term.strip()) + r'\b'
+        return bool(re.search(pattern, text, flags=re.IGNORECASE))
 
     @classmethod
     def select_speaker(cls, state: CompanionState) -> CompanionState:
@@ -21,31 +29,31 @@ class RouterAgent:
 
         msg_lower = state.user_message.lower()
 
-        # 1. Direct Name Mention Matching
+        # 1. Direct Name Mention Matching (Word Boundary)
         for comp_id in state.active_companion_ids:
             profile = state.companion_profiles.get(comp_id, {})
-            comp_name = profile.get("name", "").lower()
-            if comp_name and comp_name in msg_lower:
+            comp_name = profile.get("name", "")
+            if comp_name and cls._is_word_match(comp_name, msg_lower):
                 state.current_speaker_id = comp_id
                 state.current_speaker_name = profile.get("name", "Companion")
                 return state
 
-        # 2. Semantic Topic Matching against companion traits & type
+        # 2. Semantic Topic Matching against companion traits & type (Word Boundary)
         best_match_id = None
         highest_score = 0
 
         for comp_id in state.active_companion_ids:
             profile = state.companion_profiles.get(comp_id, {})
             traits = profile.get("traits", {})
-            top_topics = [t.lower() for t in traits.get("top_topics", [])] if isinstance(traits, dict) else []
-            comp_type = profile.get("companion_type", "").lower()
+            top_topics = traits.get("top_topics", []) if isinstance(traits, dict) else []
+            comp_type = profile.get("companion_type", "")
 
             score = 0
-            if comp_type and comp_type in msg_lower:
+            if comp_type and cls._is_word_match(comp_type, msg_lower):
                 score += 3
 
             for topic in top_topics:
-                if topic and topic in msg_lower:
+                if topic and cls._is_word_match(topic, msg_lower):
                     score += 2
 
             if score > highest_score:

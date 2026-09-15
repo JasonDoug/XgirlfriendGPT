@@ -26,7 +26,9 @@ export const API = {
 
     async getChatHistory(id) {
         const res = await fetch(`/api/v1/chat/history/${id}`);
-        return res.ok ? await res.json() : [];
+        if (res.status === 404) return [];
+        if (!res.ok) throw new Error("Failed to fetch chat history");
+        return await res.json();
     },
 
     async postMessage(payload) {

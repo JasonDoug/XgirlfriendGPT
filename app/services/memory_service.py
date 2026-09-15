@@ -1,7 +1,7 @@
 import os
 import uuid
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Tuple, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from app.config import settings
@@ -29,7 +29,7 @@ class MemoryService:
     so the companion remembers past interactions, shared jokes, and personal facts.
     Uses connection pooling and singleton caching to prevent per-request connection overhead.
     """
-    _instance: Optional["MemoryService"] = None
+    _instances: Dict[Tuple[str, str], "MemoryService"] = {}
     _clients: Dict[str, QdrantClient] = {}
 
     @classmethod
@@ -40,9 +40,10 @@ class MemoryService:
         if target_host == ":memory:":
             return MemoryService(host=target_host, collection_name=target_collection)
 
-        if cls._instance is None:
-            cls._instance = MemoryService(host=target_host, collection_name=target_collection)
-        return cls._instance
+        key = (target_host, target_collection)
+        if key not in cls._instances:
+            cls._instances[key] = MemoryService(host=target_host, collection_name=target_collection)
+        return cls._instances[key]
 
     def __init__(self, host: Optional[str] = None, collection_name: Optional[str] = None):
         self.host = host or settings.QDRANT_HOST

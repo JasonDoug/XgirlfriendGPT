@@ -146,6 +146,19 @@ class LLMService:
         return cleaned if cleaned else text.strip()
 
     @classmethod
+    def _build_headers(cls) -> Dict[str, str]:
+        headers = {"Content-Type": "application/json"}
+        if settings.LLM_API_KEY:
+            url_lower = settings.LLM_BASE_URL.lower()
+            is_https = url_lower.startswith("https://")
+            is_loopback = any(h in url_lower for h in ["localhost", "127.0.0.1", "::1", "0.0.0.0"])
+            if is_https or is_loopback:
+                headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+            else:
+                logger.warning("LLM_API_KEY set but target LLM_BASE_URL is unencrypted non-loopback HTTP; omitting Authorization header.")
+        return headers
+
+    @classmethod
     async def _call_inference_engine_async(cls, user_message: str, system_prompt: str, history: List[Dict[str, str]]) -> str:
         """
         Calls live LLM server asynchronously using httpx.AsyncClient.
@@ -153,9 +166,7 @@ class LLMService:
         import httpx
         import asyncio
 
-        headers = {"Content-Type": "application/json"}
-        if settings.LLM_API_KEY:
-            headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+        headers = cls._build_headers()
 
         messages = [{"role": "system", "content": system_prompt}]
         if history:
@@ -215,9 +226,7 @@ class LLMService:
         """
         import httpx
         
-        headers = {"Content-Type": "application/json"}
-        if settings.LLM_API_KEY:
-            headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+        headers = cls._build_headers()
 
         messages = [{"role": "system", "content": system_prompt}]
         if history:

@@ -8,8 +8,8 @@ from app.graph.agents.memory_agent import MemoryAgent
 def router_node(state: CompanionState) -> CompanionState:
     return RouterAgent.select_speaker(state)
 
-def persona_node(state: CompanionState) -> CompanionState:
-    return PersonaAgent.generate_response(state)
+async def persona_node(state: CompanionState) -> CompanionState:
+    return await PersonaAgent.generate_response_async(state)
 
 def scene_node(state: CompanionState) -> CompanionState:
     return SceneAgent.execute_visual(state)

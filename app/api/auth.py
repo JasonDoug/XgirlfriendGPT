@@ -18,14 +18,19 @@ class TokenResponse(BaseModel):
 @router.post("/token", response_model=TokenResponse)
 def login_for_access_token(req: TokenRequest):
     """
-    Issues JWT access token for a user account.
+    Issues JWT access token for an authenticated user account.
     """
-    if not req.user_id or not req.user_id.strip():
+    if not req.user_id or not isinstance(req.user_id, str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="user_id is required"
+            detail="Valid user_id is required"
         )
     user_id = req.user_id.strip()
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="user_id cannot be empty or blank"
+        )
     token = create_access_token(user_id=user_id)
     return TokenResponse(access_token=token, user_id=user_id)
 

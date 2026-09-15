@@ -488,12 +488,12 @@ class VisualPipelineService:
         """
         import asyncio
         output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "generated", companion_id)
-        os.makedirs(output_dir, exist_ok=True)
+        await asyncio.to_thread(os.makedirs, output_dir, exist_ok=True)
 
         comp_name = "Companion"
         comp_gender = "female"
         from app.services.storage_service import StorageService
-        profile = StorageService.get_companion_by_id(companion_id)
+        profile = await asyncio.to_thread(StorageService.get_companion_by_id, companion_id)
         if profile:
             comp_name = profile.get("name", comp_name)
             custom_desc = profile.get("system_prompt", "")
@@ -501,14 +501,15 @@ class VisualPipelineService:
                 comp_gender = "male"
 
         from app.services.settings_service import SettingsService
-        active_cfg = SettingsService.get_settings()
+        active_cfg = await asyncio.to_thread(SettingsService.get_settings)
         ckpt = active_cfg.get("image_model") or "flux1-dev-fp8.safetensors"
         width = int(active_cfg.get("image_width", 512))
         height = int(active_cfg.get("image_height", 768))
         steps = int(active_cfg.get("image_steps", 20))
         cfg_val = float(active_cfg.get("image_cfg", 1.0))
 
-        workflow = cls.build_dynamic_workflow(
+        workflow = await asyncio.to_thread(
+            cls.build_dynamic_workflow,
             prompt=prompt,
             checkpoint_name=ckpt,
             width=width,
@@ -559,18 +560,22 @@ class VisualPipelineService:
                 comfy_disk_path = f"/home/jason/AI-ImageGen/ComfyUI/output/{filename}"
                 dest_file_path = os.path.join(output_dir, filename)
 
-                if os.path.exists(comfy_disk_path):
+                exists_comfy = await asyncio.to_thread(os.path.exists, comfy_disk_path)
+                if exists_comfy:
                     import shutil
-                    shutil.copyfile(comfy_disk_path, dest_file_path)
+                    await asyncio.to_thread(shutil.copyfile, comfy_disk_path, dest_file_path)
                 else:
                     view_url = f"{cls.COMFYUI_URL}/view?filename={filename}&type=output"
                     async with httpx.AsyncClient(timeout=10.0) as client:
                         img_bytes_resp = await client.get(view_url)
                         if img_bytes_resp.status_code == 200:
-                            with open(dest_file_path, "wb") as f:
-                                f.write(img_bytes_resp.content)
+                            def write_bytes(path, data):
+                                with open(path, "wb") as f:
+                                    f.write(data)
+                            await asyncio.to_thread(write_bytes, dest_file_path, img_bytes_resp.content)
 
-                if os.path.exists(dest_file_path):
+                exists_dest = await asyncio.to_thread(os.path.exists, dest_file_path)
+                if exists_dest:
                     relative_url = f"/static/generated/{companion_id}/{filename}"
                     return {
                         "status": "success",

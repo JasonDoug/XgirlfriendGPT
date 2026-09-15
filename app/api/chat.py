@@ -15,11 +15,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["Companion Chat & Text Engine"])
 
 def validate_companion_id(companion_id: str) -> str:
-    if not companion_id or not isinstance(companion_id, str):
+    if not isinstance(companion_id, str):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid companion_id format")
-    if ".." in companion_id or "/" in companion_id or "\\" in companion_id:
+    clean_id = companion_id.strip()
+    if not clean_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="companion_id cannot be empty or blank")
+    if ".." in clean_id or "/" in clean_id or "\\" in clean_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid companion_id: Path traversal characters forbidden")
-    return companion_id.strip()
+    return clean_id
 
 @router.get("/history/{companion_id}")
 def get_chat_history(companion_id: str):
@@ -30,7 +33,7 @@ def get_chat_history(companion_id: str):
     return StorageService.get_chat_history(clean_id)
 
 @router.post("/message", response_model=ChatResponse, dependencies=[Depends(check_chat_rate_limit)])
-def send_chat_message(request: ChatRequest):
+async def send_chat_message(request: ChatRequest):
     """
     Companion Interactive Chat Endpoint.
     Executes roleplay, selfie generation, vector memory, and voice synthesis
@@ -80,7 +83,7 @@ def send_chat_message(request: ChatRequest):
     if not history_turns:
         history_turns = StorageService.get_chat_history(request.companion_id)
 
-    # Step 2: Invoke LangGraph Multi-Agent Orchestrator
+    # Step 2: Invoke LangGraph Multi-Agent Orchestrator asynchronously
     try:
         initial_state = CompanionState(
             room_id=f"single_{request.companion_id}",
@@ -97,7 +100,7 @@ def send_chat_message(request: ChatRequest):
             # In Fast Mode, skip pre-rendering ComfyUI visual generation during chat turn
             initial_state.should_generate_image = False
 
-        final_state = companion_graph.invoke(initial_state)
+        final_state = await companion_graph.ainvoke(initial_state)
 
         reply_text = final_state.get("reply") or "Hey there!"
         image_url = final_state.get("image_url") if not request.fast_mode else None

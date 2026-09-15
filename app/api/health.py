@@ -52,7 +52,8 @@ async def readiness_check():
         collections = mem_service.client.get_collections()
         dependencies["qdrant"] = {"status": "healthy", "collections_count": len(collections.collections)}
     except Exception as e:
-        dependencies["qdrant"] = {"status": "degraded", "error": str(e)}
+        logger.error(f"Readiness check failed for Qdrant: {e}", exc_info=True)
+        dependencies["qdrant"] = {"status": "degraded", "error": "Dependency unavailable"}
         all_healthy = False
 
     # 2. LLM Engine Check
@@ -66,7 +67,8 @@ async def readiness_check():
                 dependencies["llm_engine"] = {"status": "degraded", "status_code": resp.status_code}
                 all_healthy = False
     except Exception as e:
-        dependencies["llm_engine"] = {"status": "degraded", "error": str(e)}
+        logger.error(f"Readiness check failed for LLM engine: {e}", exc_info=True)
+        dependencies["llm_engine"] = {"status": "degraded", "error": "Dependency unavailable"}
         all_healthy = False
 
     # 3. Visual Engine Check
@@ -77,8 +79,11 @@ async def readiness_check():
                 dependencies["visual_engine"] = {"status": "healthy"}
             else:
                 dependencies["visual_engine"] = {"status": "degraded", "status_code": resp.status_code}
+                all_healthy = False
     except Exception as e:
-        dependencies["visual_engine"] = {"status": "offline", "error": str(e)}
+        logger.error(f"Readiness check failed for Visual engine: {e}", exc_info=True)
+        dependencies["visual_engine"] = {"status": "offline", "error": "Dependency unavailable"}
+        all_healthy = False
 
     overall_status = "healthy" if all_healthy else "degraded"
     status_code = status.HTTP_200_OK if all_healthy else status.HTTP_503_SERVICE_UNAVAILABLE

@@ -4,9 +4,13 @@ import hashlib
 import json
 import base64
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, status, Header
+from app.config import settings
 
-SECRET_KEY = "xgirlfriendgpt_secret_jwt_key_change_in_prod"
+def get_secret_key() -> str:
+    key = settings.JWT_SECRET_KEY
+    if not key or not key.strip():
+        raise RuntimeError("JWT_SECRET_KEY is not configured in settings or environment.")
+    return key.strip()
 
 def create_access_token(user_id: str, expires_in: int = 86400) -> str:
     """
@@ -22,8 +26,9 @@ def create_access_token(user_id: str, expires_in: int = 86400) -> str:
     header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
     payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
     
+    secret_key = get_secret_key()
     signature_input = f"{header_b64}.{payload_b64}".encode()
-    signature = hmac.new(SECRET_KEY.encode(), signature_input, hashlib.sha256).digest()
+    signature = hmac.new(secret_key.encode(), signature_input, hashlib.sha256).digest()
     signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
     
     return f"{header_b64}.{payload_b64}.{signature_b64}"
@@ -39,8 +44,9 @@ def verify_access_token(token: str) -> Dict[str, Any]:
         
         header_b64, payload_b64, signature_b64 = parts
         
+        secret_key = get_secret_key()
         signature_input = f"{header_b64}.{payload_b64}".encode()
-        expected_sig = hmac.new(SECRET_KEY.encode(), signature_input, hashlib.sha256).digest()
+        expected_sig = hmac.new(secret_key.encode(), signature_input, hashlib.sha256).digest()
         
         rem = len(signature_b64) % 4
         if rem > 0:
