@@ -438,5 +438,25 @@
     ],
     "created_at": "2026-09-15T15:31:27.157849",
     "updated_at": "2026-09-15T15:31:27.157853"
+  },
+  {
+    "room_id": "room_99cda0fc70",
+    "name": "Tech & Gaming Lounge",
+    "description": "Room with Aria and Kai",
+    "user_id": "test_user_room",
+    "participants": [
+      {
+        "companion_id": "fed6d5a1-b570-4897-8cb8-a66f5288b672",
+        "name": "Aria",
+        "role": "participant"
+      },
+      {
+        "companion_id": "d680e896-10c3-43c2-b93c-ca099b31643d",
+        "name": "Kai",
+        "role": "participant"
+      }
+    ],
+    "created_at": "2026-09-15T18:02:49.488655",
+    "updated_at": "2026-09-15T18:02:49.488658"
   }
 ]

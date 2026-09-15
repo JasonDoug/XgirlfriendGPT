@@ -118,13 +118,20 @@ async def send_room_message(request: RoomMessageRequest):
         current_speaker_id=request.target_companion_id
     )
 
-    # Invoke LangGraph Workflow
-    final_state_dict = await companion_graph.ainvoke(initial_state)
+    # Invoke LangGraph Workflow with thread checkpointer configuration
+    thread_config = {"configurable": {"thread_id": request.room_id}}
+    final_state = await companion_graph.ainvoke(initial_state, config=thread_config)
 
-    speaker_id = final_state_dict.get("current_speaker_id") or active_ids[0]
-    speaker_name = final_state_dict.get("current_speaker_name") or companion_profiles[speaker_id].get("name", "Companion")
-    reply_text = final_state_dict.get("reply") or "Hey!"
-    image_url = final_state_dict.get("image_url")
+    if isinstance(final_state, dict):
+        speaker_id = final_state.get("current_speaker_id") or active_ids[0]
+        speaker_name = final_state.get("current_speaker_name") or companion_profiles.get(speaker_id, {}).get("name", "Companion")
+        reply_text = final_state.get("reply") or "Hey!"
+        image_url = final_state.get("image_url")
+    else:
+        speaker_id = getattr(final_state, "current_speaker_id", None) or active_ids[0]
+        speaker_name = getattr(final_state, "current_speaker_name", None) or companion_profiles.get(speaker_id, {}).get("name", "Companion")
+        reply_text = getattr(final_state, "reply", None) or "Hey!"
+        image_url = getattr(final_state, "image_url", None)
 
     # Persist turns in history
     StorageService.append_room_message(

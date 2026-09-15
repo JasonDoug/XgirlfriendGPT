@@ -101,12 +101,19 @@ async def send_chat_message(request: ChatRequest):
             # In Fast Mode, skip pre-rendering ComfyUI visual generation during chat turn
             initial_state.should_generate_image = False
 
-        final_state = await companion_graph.ainvoke(initial_state)
+        thread_config = {"configurable": {"thread_id": f"single_{request.companion_id}"}}
+        final_state = await companion_graph.ainvoke(initial_state, config=thread_config)
 
-        reply_text = final_state.get("reply") or "Hey there!"
-        image_url = final_state.get("image_url") if not request.fast_mode else None
-        should_gen_image = final_state.get("should_generate_image", False)
-        raw_prompt = final_state.get("image_prompt", "")
+        if isinstance(final_state, dict):
+            reply_text = final_state.get("reply") or "Hey there!"
+            image_url = final_state.get("image_url") if not request.fast_mode else None
+            should_gen_image = final_state.get("should_generate_image", False)
+            raw_prompt = final_state.get("image_prompt", "")
+        else:
+            reply_text = getattr(final_state, "reply", None) or "Hey there!"
+            image_url = getattr(final_state, "image_url", None) if not request.fast_mode else None
+            should_gen_image = getattr(final_state, "should_generate_image", False)
+            raw_prompt = getattr(final_state, "image_prompt", "")
         
         # Preserve or construct prompt for on-demand or pre-rendered generation
         companion_name = profile_data.get("name", "Companion")

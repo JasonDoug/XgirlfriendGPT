@@ -10,11 +10,14 @@ class SceneAgent:
     """
     Visual & Scene Director Agent.
     Transforms raw image prompts into context-congruent FLUX/InstantID payloads
-    with LoRA trigger words and calls ComfyUI generation engine.
+    with LoRA trigger words and manages turn-taking sequence across room personas.
     """
 
     @classmethod
     def execute_visual(cls, state: CompanionState) -> CompanionState:
+        if state.pending_speakers is None:
+            state.pending_speakers = []
+
         if state.fast_mode or not state.should_generate_image or not state.image_prompt or not state.current_speaker_id:
             return state
 
