@@ -509,7 +509,7 @@ class VisualPipelineService:
         cfg_val = float(active_cfg.get("image_cfg", 1.0))
 
         workflow = await asyncio.to_thread(
-            cls.build_dynamic_workflow,
+            cls.prepare_comfy_workflow,
             prompt=prompt,
             checkpoint_name=ckpt,
             width=width,

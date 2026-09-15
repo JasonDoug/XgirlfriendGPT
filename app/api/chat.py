@@ -93,7 +93,8 @@ async def send_chat_message(request: ChatRequest):
             companion_profiles={request.companion_id: profile_data},
             message_history=history_turns,
             recalled_memories=retrieved_memories,
-            current_speaker_id=request.companion_id
+            current_speaker_id=request.companion_id,
+            fast_mode=request.fast_mode
         )
 
         if request.fast_mode:

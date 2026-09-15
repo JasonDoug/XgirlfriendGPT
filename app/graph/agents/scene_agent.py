@@ -15,7 +15,7 @@ class SceneAgent:
 
     @classmethod
     def execute_visual(cls, state: CompanionState) -> CompanionState:
-        if not state.should_generate_image or not state.image_prompt or not state.current_speaker_id:
+        if state.fast_mode or not state.should_generate_image or not state.image_prompt or not state.current_speaker_id:
             return state
 
         current_id = state.current_speaker_id

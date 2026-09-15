@@ -14,6 +14,8 @@ class CompanionState(BaseModel):
     current_speaker_name: Optional[str] = None
     reply: Optional[str] = None
     
+    fast_mode: bool = False
+    
     should_generate_image: bool = False
     image_prompt: Optional[str] = None
     image_url: Optional[str] = None
