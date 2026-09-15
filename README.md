@@ -142,7 +142,7 @@ Open your browser at `http://localhost:8005` to access the interactive web inter
 | `LLM_BASE_URL` | `http://localhost:11434/v1` | Ollama/OpenAI-compatible endpoint |
 | `LLM_API_KEY` | `` | API key for remote providers |
 | `DEFAULT_MODEL` | `granite4:latest` | Model identifier for LLM inference |
-| `QDRANT_HOST` | `./data/qdrant_db` | Local path or remote host:port |
+| `QDRANT_HOST` | `./data/qdrant_db` | Qdrant mode: local disk (`./data/qdrant_db`), in-memory (`:memory:`), or server (`localhost` / `qdrant`) |
 | `QDRANT_COLLECTION` | `companion_memories` | Vector collection name |
 | `JWT_SECRET_KEY` | *required* | HS256 signing key (generate: `openssl rand -hex 32`) |
 | `TWILIO_ACCOUNT_SID` | `` | Twilio account SID for SMS/Voice |
