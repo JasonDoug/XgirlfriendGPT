@@ -24,10 +24,25 @@ class PromptBuilderService:
         else:
             length_instruction = f"{avg_len} in length."
 
+        msg_style = (getattr(traits, "messaging_style", None) or "sms").lower()
+        if "sms" in msg_style or "text" in msg_style:
+            style_instruction = (
+                "5. REAL-TIME SMS / TEXT MESSAGING STYLE DIRECTIVE:\n"
+                "   - You are texting with the user over SMS/iMessage on your smartphone.\n"
+                "   - Write short, direct, casual text messages (1-3 sentences max). Use natural texting phrasing, emojis, and realistic conversation flow.\n"
+                "   - STRICT NO-ASTERISK RULE: DO NOT use asterisks or italicized stage directions for actions (do NOT write '*smiles*', '*walks in*', or '*sighs*'). Write purely in direct, authentic text message speech as if sending an SMS."
+            )
+        else:
+            style_instruction = (
+                "5. EXPRESSIVE ROLEPLAY STYLE DIRECTIVE:\n"
+                "   - Express character actions, gestures, and emotions alongside your speech."
+            )
+
         prompt = f"""You are {companion_name}, a custom companion of type '{companion_type}'.
 {custom_desc_part}
 ### PERSONALITY PROFILE:
 - Formality & Tone: {traits.formality.upper()} ({traits.tone})
+- Messaging Style: {msg_style.upper()} (SMS/iMessage texting)
 - Average Response Length: {traits.average_response_length.upper()}{appearance_part}{slang_part}{emojis_part}{topics_part}
 - Greeting Style: "{traits.greeting_style}"
 
@@ -42,7 +57,8 @@ class PromptBuilderService:
    CRITICAL RULES FOR THE IMAGE PROMPT:
    - STRICT CHAT CONTEXT CONGRUENCE: The prompt MUST accurately reflect your EXACT current activity, clothing, pose, objects, and environment as established in the immediate conversation history. (e.g., if you are drinking coffee on the porch, describe yourself drinking coffee on the porch in that exact outfit).
    - CHARACTER PHYSICAL CONSISTENCY & NO PROPER NAMES: NEVER use proper character names (do NOT write "{companion_name}"). Instead, explicitly describe physical human features matching your character's defined appearance in your profile (e.g. hair color, hair style, eye color, facial features, body type, skin tone).
-   - NO AI DISCLAIMERS OR PLACEHOLDERS: Always generate a complete, realistic descriptive image prompt."""
+   - NO AI DISCLAIMERS OR PLACEHOLDERS: Always generate a complete, realistic descriptive image prompt.
+{style_instruction}"""
         return prompt.strip()
 
     @classmethod

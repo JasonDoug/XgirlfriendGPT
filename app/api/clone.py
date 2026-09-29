@@ -101,6 +101,8 @@ def update_companion_profile(companion_id: str, request: CompanionUpdateRequest)
         profile.traits.formality = request.formality
     if request.response_length is not None:
         profile.traits.average_response_length = request.response_length
+    if request.messaging_style is not None:
+        profile.traits.messaging_style = request.messaging_style
     if request.name is not None:
         profile.name = request.name
     if request.companion_type is not None:

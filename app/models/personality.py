@@ -7,6 +7,7 @@ class PersonalityIngestionRequest(BaseModel):
     companion_type: str = Field(default="custom", json_schema_extra={"example": "friend"}) # e.g. friend, mentor, roleplay
     formality: Optional[str] = Field(default=None, description="Optional explicit formality setting (casual, formal, witty & sarcastic, balanced, etc.)")
     response_length: Optional[str] = Field(default=None, description="Optional explicit average response length setting (short, medium, verbose, etc.)")
+    messaging_style: Optional[str] = Field(default="sms", description="Messaging style ('sms' for casual text messaging without asterisk actions, or 'roleplay')")
     raw_texts: Optional[List[str]] = Field(default=None, description="Optional array of text messages, email snippets, or chat logs.")
     personality_description: Optional[str] = Field(
         default=None, 
@@ -32,6 +33,7 @@ class ExtractedTraits(BaseModel):
     formality: str = Field(default="casual", json_schema_extra={"example": "casual / formal / sarcastic"})
     slang_tokens: List[str] = Field(default_factory=list, json_schema_extra={"example": ["lol", "ngl", "brb"]})
     average_response_length: str = Field(default="short", json_schema_extra={"example": "short / medium / verbose"})
+    messaging_style: str = Field(default="sms", description="Messaging style: 'sms' (casual short text messages without asterisk actions) or 'roleplay'")
     emoji_frequency: str = Field(default="moderate", json_schema_extra={"example": "none / low / moderate / high"})
     favorite_emojis: List[str] = Field(default_factory=list, json_schema_extra={"example": ["😂", "🔥", "✨"]})
     tone: str = Field(default="friendly", json_schema_extra={"example": "warm, witty, slightly sarcastic"})
@@ -46,6 +48,7 @@ class ExtractedTraits(BaseModel):
 class CompanionUpdateRequest(BaseModel):
     formality: Optional[str] = Field(default=None, description="Updated formality setting (casual, formal, witty & sarcastic, etc.)")
     response_length: Optional[str] = Field(default=None, description="Updated average response length (short, medium, verbose)")
+    messaging_style: Optional[str] = Field(default=None, description="Updated messaging style (sms, roleplay)")
     name: Optional[str] = Field(default=None, description="Optional updated companion name")
     companion_type: Optional[str] = Field(default=None, description="Optional updated companion type")
     appearance_description: Optional[str] = Field(default=None, description="Optional updated physical appearance description")

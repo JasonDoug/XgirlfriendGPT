@@ -91,7 +91,7 @@
                     <span>✨</span> Create & Save New Companion
                 </h2>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                     <div>
                         <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Companion Name</label>
                         <input id="companionName" type="text" placeholder="e.g. Aria, Captain Jack" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
@@ -103,6 +103,13 @@
                             <option value="mentor">Mentor</option>
                             <option value="creative">Creative Partner</option>
                             <option value="custom">Custom Persona</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Messaging Style</label>
+                        <select id="companionMessagingStyle" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none">
+                            <option value="sms">📱 SMS / Texting (No *actions*)</option>
+                            <option value="roleplay">🎭 Roleplay (With *actions*)</option>
                         </select>
                     </div>
                     <div>
@@ -1031,12 +1038,14 @@
 
             const formality = document.getElementById("companionFormality").value;
             const responseLength = document.getElementById("companionResponseLength").value;
+            const messagingStyle = document.getElementById("companionMessagingStyle") ? document.getElementById("companionMessagingStyle").value : "sms";
 
             const payload = {
                 companion_name: name,
                 companion_type: type,
                 formality: formality,
-                response_length: responseLength
+                response_length: responseLength,
+                messaging_style: messagingStyle
             };
 
             if (appearanceText) {
