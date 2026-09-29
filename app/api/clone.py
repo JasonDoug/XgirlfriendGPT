@@ -10,7 +10,7 @@ from app.services.storage_service import StorageService
 router = APIRouter(prefix="/clone", tags=["Personality Cloning & Ingestion"])
 
 @router.post("/ingest", response_model=CompanionProfile, status_code=status.HTTP_201_CREATED)
-def clone_personality(request: PersonalityIngestionRequest):
+async def clone_personality(request: PersonalityIngestionRequest):
     """
     Personality Ingestion & Cloning Endpoint.
     
@@ -24,6 +24,7 @@ def clone_personality(request: PersonalityIngestionRequest):
     traits = PersonalityExtractorService.extract_traits(
         raw_texts=request.raw_texts,
         personality_description=request.personality_description,
+        appearance_description=request.appearance_description,
         formality_override=request.formality,
         response_length_override=request.response_length
     )
@@ -37,13 +38,32 @@ def clone_personality(request: PersonalityIngestionRequest):
 
     companion_id = str(uuid.uuid4())
 
-    # Step 3: Save Profile Permanently
+    # Step 3: Initial Avatar Image Generation
+    avatar_image_url = None
+    appearance_text = request.appearance_description or traits.physical_appearance
+    if appearance_text and appearance_text.strip():
+        avatar_prompt = f"A high quality portrait photo of {appearance_text.strip()}, 35mm photograph, casual selfie, studio lighting"
+    else:
+        avatar_prompt = f"A high quality portrait photo of {request.companion_name}, casual selfie, 35mm photograph"
+
+    try:
+        from app.services.visual_service import VisualService
+        gen_res = await VisualService.generate_selfie_async(prompt=avatar_prompt, companion_id=companion_id)
+        if gen_res and gen_res.get("image_url"):
+            avatar_image_url = gen_res.get("image_url")
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Avatar image generation skipped or failed: {e}")
+
+    # Step 4: Save Profile Permanently
     profile = CompanionProfile(
         companion_id=companion_id,
         name=request.companion_name,
         companion_type=request.companion_type,
         traits=traits,
-        system_prompt=system_prompt
+        system_prompt=system_prompt,
+        appearance_description=request.appearance_description,
+        avatar_image_url=avatar_image_url
     )
     
     StorageService.save_companion(profile)
@@ -85,6 +105,9 @@ def update_companion_profile(companion_id: str, request: CompanionUpdateRequest)
         profile.name = request.name
     if request.companion_type is not None:
         profile.companion_type = request.companion_type
+    if request.appearance_description is not None:
+        profile.appearance_description = request.appearance_description
+        profile.traits.physical_appearance = request.appearance_description
 
     # Re-build system prompt with updated traits
     profile.system_prompt = PromptBuilderService.build_system_prompt(

@@ -37,6 +37,7 @@ class ChatResponse(BaseModel):
     reply: str
     image_command: Optional[ImageGenCommand] = None
     audio_url: Optional[str] = Field(default=None, description="Generated TTS voice audio MP3 URL")
+    image_url: Optional[str] = Field(default=None, description="Generated image static URL when available")
     retrieved_memories: List[str] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 

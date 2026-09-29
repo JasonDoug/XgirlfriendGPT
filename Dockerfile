@@ -42,8 +42,9 @@ COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser data/ ./data/
 COPY --chown=appuser:appuser .env.example ./.env.example
 
-# Create directories for generated content
-RUN mkdir -p /app/app/static/generated /app/app/static/audio /app/data/qdrant_db \
+# Create directories for generated content and FastEmbed cache with full permissions
+RUN mkdir -p /app/app/static/generated /app/app/static/audio /app/data/qdrant_db /tmp/fastembed_cache \
+    && chmod -R 777 /app/data /app/app/static/generated /tmp/fastembed_cache \
     && chown -R appuser:appuser /app
 
 # Switch to non-root user
@@ -55,6 +56,7 @@ ENV PATH="/home/appuser/.local/bin:${PATH}"
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    FASTEMBED_CACHE_PATH=/tmp/fastembed_cache \
     ENV=production
 
 # Expose port

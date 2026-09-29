@@ -13,6 +13,7 @@ class SettingsUpdateRequest(BaseModel):
     image_steps: int = Field(default=20)
     image_cfg: float = Field(default=7.0)
     selected_lora: str = Field(default="")
+    selected_llm_lora: str = Field(default="")
 
 @router.get("", response_model=Dict[str, Any])
 def get_current_settings():

@@ -16,8 +16,14 @@ def get_fastembed_model():
     global _fastembed_model
     if _fastembed_model is None:
         try:
+            cache_dir = os.environ.get("FASTEMBED_CACHE_PATH", "/tmp/fastembed_cache")
+            os.makedirs(cache_dir, exist_ok=True)
+            try:
+                os.chmod(cache_dir, 0o777)
+            except Exception:
+                pass
             from fastembed import TextEmbedding
-            _fastembed_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+            _fastembed_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", cache_dir=cache_dir)
         except Exception as e:
             logger.warning(f"FastEmbed initialization warning: {e}")
     return _fastembed_model

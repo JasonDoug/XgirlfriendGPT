@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # XgirlfriendGPT Main Application
   app:
@@ -8,24 +6,27 @@ services:
       dockerfile: Dockerfile
       target: runtime
     container_name: xgirlfriendgpt-app
-    ports:
-      - "8005:8005"
+    network_mode: "host"
     environment:
       - ENV=production
       - LLM_PROVIDER=ollama
-      - LLM_BASE_URL=http://ollama:11434/v1
+      - LLM_BASE_URL=http://127.0.0.1:11434/v1
       - DEFAULT_MODEL=${DEFAULT_MODEL:-R4C3R/qwen3-8b-heretic:q8_0}
-      - QDRANT_HOST=qdrant
+      - QDRANT_HOST=localhost
       - QDRANT_COLLECTION=companion_memories
+      - FASTEMBED_CACHE_PATH=/tmp/fastembed_cache
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
       - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
     volumes:
       - ./data:/app/data
+      - ./app:/app/app
       - ./app/static:/app/app/static
+      - /home/jason/models:/home/jason/models:ro
+      - /home/jason/AI-ImageGen:/home/jason/AI-ImageGen:ro
     depends_on:
-      - ollama
+#      - ollama
       - qdrant
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8005/health/liveness"]
@@ -36,29 +37,29 @@ services:
     restart: unless-stopped
 
   # Ollama LLM Server
-  ollama:
-    image: ollama/ollama:latest
-    container_name: xgirlfriendgpt-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+#  ollama:
+#    image: ollama/ollama:latest
+#    container_name: xgirlfriendgpt-ollama
+#   ports:
+#      - "11434:11434"
+#    volumes:
+#      - ollama_data:/root/.ollama
+#    environment:
+#      - OLLAMA_HOST=0.0.0.0
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - driver: nvidia
+#              count: all
+#              capabilities: [gpu]
+#    restart: unless-stopped
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 30s
 
   # Qdrant Vector Database
   qdrant:

@@ -47,3 +47,19 @@ def test_personality_extractor_overrides():
     
     system_prompt = PromptBuilderService.build_system_prompt("Professor", "mentor", traits)
     assert "verbose" in system_prompt
+
+def test_personality_extractor_with_appearance():
+    p_desc = "A witty programmer."
+    a_desc = "Long blonde hair, blue eyes, athletic build, wearing a black leather jacket."
+    
+    traits = PersonalityExtractorService.extract_traits(
+        personality_description=p_desc,
+        appearance_description=a_desc
+    )
+    
+    assert traits.custom_description == p_desc
+    assert traits.physical_appearance == a_desc
+    
+    system_prompt = PromptBuilderService.build_system_prompt("Aria", "friend", traits)
+    assert "Long blonde hair" in system_prompt
+    assert "Physical Appearance" in system_prompt

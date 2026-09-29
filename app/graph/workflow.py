@@ -9,8 +9,8 @@ from app.graph.agents.memory_agent import MemoryAgent
 def router_node(state: CompanionState) -> CompanionState:
     return RouterAgent.select_speaker(state)
 
-def scene_director_node(state: CompanionState) -> CompanionState:
-    return SceneAgent.execute_visual(state)
+async def scene_director_node(state: CompanionState) -> CompanionState:
+    return await SceneAgent.execute_visual_async(state)
 
 async def persona_dialogue_node(state: CompanionState) -> CompanionState:
     return await PersonaAgent.generate_response_async(state)

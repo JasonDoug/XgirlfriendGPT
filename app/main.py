@@ -17,6 +17,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
     force=True
 )
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @asynccontextmanager

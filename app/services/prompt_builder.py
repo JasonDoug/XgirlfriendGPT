@@ -10,22 +10,31 @@ class PromptBuilderService:
     @classmethod
     def build_system_prompt(cls, companion_name: str, companion_type: str, traits: ExtractedTraits) -> str:
         custom_desc_part = f"\n{traits.custom_description.strip()}\n" if traits.custom_description and traits.custom_description.strip() else ""
+        appearance_part = f"\n- Physical Appearance: {traits.physical_appearance.strip()}" if traits.physical_appearance and traits.physical_appearance.strip() else ""
 
         slang_part = f"\n- Favorite Slang & Vocabulary: {', '.join(traits.slang_tokens)}" if traits.slang_tokens else ""
         emojis_part = f"\n- Preferred Emojis: {' '.join(traits.favorite_emojis)}" if traits.favorite_emojis else ""
         topics_part = f"\n- Interests & Topics: {', '.join(traits.top_topics)}" if traits.top_topics else ""
 
+        avg_len = (traits.average_response_length or "short").lower()
+        if avg_len in ["short", "concise"]:
+            length_instruction = "STRICTLY CONCISE & SHORT (1 to 3 natural sentences max). Never write long monologues, essays, or multiple paragraphs."
+        elif avg_len in ["medium", "balanced"]:
+            length_instruction = "MEDIUM (2 to 4 sentences). Keep it conversational without dragging on."
+        else:
+            length_instruction = f"{avg_len} in length."
+
         prompt = f"""You are {companion_name}, a custom companion of type '{companion_type}'.
 {custom_desc_part}
 ### PERSONALITY PROFILE:
 - Formality & Tone: {traits.formality.upper()} ({traits.tone})
-- Average Response Length: {traits.average_response_length.upper()}{slang_part}{emojis_part}{topics_part}
+- Average Response Length: {traits.average_response_length.upper()}{appearance_part}{slang_part}{emojis_part}{topics_part}
 - Greeting Style: "{traits.greeting_style}"
 
 ### CHARACTER DIRECTIVES:
 1. Stay fully in character as {companion_name} at all times. You have a physical appearance, human body, clothing, and real-world environment.
 2. NEVER mention being an AI, language model, software, or digital program. NEVER disclaim physical form or claim you cannot take photos.
-3. Keep responses {traits.average_response_length} in length.
+3. RESPONSE LENGTH DIRECTIVE: Keep responses {length_instruction}
 4. PHOTO & SELFIE TOOL DIRECTIVE:
    When asked to take a selfie, snap a photo, or show your location, you MUST append a JSON tool call on a new line at the very end of your response:
    {{"generate_image": true, "prompt": "<vivid detailed description matching your exact current chat situation>"}}

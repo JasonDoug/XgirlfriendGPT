@@ -1,9 +1,9 @@
 {
   "llm_model": "hf.co/Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix:Q8_0-imat",
-  "image_model": "juggernautXL_ragnarok.safetensors",
-  "image_width": 1024,
-  "image_height": 1024,
-  "image_steps": 4,
-  "image_cfg": 3.5,
+  "image_model": "SwarmUI_Z-Image-Turbo-FP8Mix.safetensors",
+  "image_width": 896,
+  "image_height": 1152,
+  "image_steps": 6,
+  "image_cfg": 2.0,
   "selected_lora": ""
 }

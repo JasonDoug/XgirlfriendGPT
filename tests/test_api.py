@@ -77,7 +77,8 @@ def test_clone_personality_with_description():
         "user_id": "test_user_100",
         "message": "Hey Kai! Can you give me advice on learning Python?",
         "enable_memory": True,
-        "enable_vision": False
+        "enable_vision": False,
+        "fast_mode": True
     }
     
     chat_resp = client.post("/api/v1/chat/message", json=chat_payload)
@@ -158,5 +159,22 @@ def test_update_companion_profile_formality_and_length():
     assert updated_data["traits"]["average_response_length"] == "verbose"
     assert "PIRATE & ADVENTUROUS" in updated_data["system_prompt"]
     assert "VERBOSE" in updated_data["system_prompt"]
+
+def test_clone_personality_with_appearance_description():
+    payload = {
+        "companion_name": "Maya",
+        "companion_type": "creative",
+        "personality_description": "An adventurous traveler and photographer.",
+        "appearance_description": "Short silver hair, dark brown eyes, wearing round glasses and a leather jacket."
+    }
+    
+    response = client.post("/api/v1/clone/ingest", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    
+    assert data["name"] == "Maya"
+    assert data["appearance_description"] == payload["appearance_description"]
+    assert data["traits"]["physical_appearance"] == payload["appearance_description"]
+    assert "Short silver hair" in data["system_prompt"]
 
 

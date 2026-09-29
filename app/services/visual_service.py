@@ -68,76 +68,60 @@ class VisualPipelineService:
         
         is_scene = any(kw in p_lower for kw in scene_keywords) and not any(kw in p_lower for kw in person_keywords)
 
-        is_flux2 = "flux-2" in checkpoint_name.lower() or "klein" in checkpoint_name.lower()
-        is_flux1 = "flux" in checkpoint_name.lower() and not is_flux2
-        is_flux = is_flux1 or is_flux2
+        lora_list = []
+        if selected_lora:
+            if isinstance(selected_lora, list):
+                lora_list = [l for l in selected_lora if l]
+            elif isinstance(selected_lora, str) and selected_lora.strip():
+                lora_list = [selected_lora.strip()]
 
-        # Clean out any proper character names from prompt (e.g. "Cherry Rose", "Cherry") to prevent model confusion
-        clean_prompt = prompt
-        if companion_name:
-            for name_variant in [companion_name, companion_name.split()[0]]:
-                if name_variant and len(name_variant) > 1:
-                    clean_prompt = re.sub(rf'\b{re.escape(name_variant)}\b', '', clean_prompt, flags=re.IGNORECASE).strip()
-
-        # Clean extra commas or trailing whitespace left behind by name removal
-        clean_prompt = re.sub(r'\s*,\s*,', ',', clean_prompt).strip(" ,")
-
-        # Process multi-LoRA selection and auto-inject trigger words into positive prompt
-        lora_list = [l.strip() for l in (selected_lora or "").split(",") if l.strip() and l.strip().lower() != "none"]
-        trigger_words = []
-        for l_file in lora_list:
-            tw = cls.get_lora_trigger_word(l_file)
-            if tw and tw.lower() not in clean_prompt.lower():
-                trigger_words.append(tw)
-
-        if trigger_words:
-            clean_prompt = f"{clean_prompt}, {', '.join(trigger_words)}"
-
-        if companion_gender.lower() == "male":
-            gender_desc = "man"
-            subject_tag = "1man, male"
-            negative_tag = ", 1woman, female, feminine features, girl, dress"
-        else:
-            gender_desc = "woman"
-            subject_tag = "1woman, female"
-            negative_tag = ", 1man, male, masculine features, boy, guy, mustache, beard"
-
-        if is_scene:
-            if is_flux:
-                positive_prompt = f"A detailed photorealistic photo of {clean_prompt}"
-                negative_prompt = ""
+        trigger_word = cls.get_lora_trigger_word(selected_lora) if selected_lora and isinstance(selected_lora, str) else ""
+        
+        prompt_parts = []
+        if trigger_word and trigger_word.lower() not in prompt.lower():
+            prompt_parts.append(trigger_word)
+        
+        if not is_scene:
+            prefix = ""
+            if companion_gender.lower() == "male":
+                prefix = f"photo of a handsome man{f' named {companion_name}' if companion_name else ''}"
             else:
-                positive_prompt = f"masterpiece, best quality, photorealistic photo of {clean_prompt}, 8k, sharp focus, natural lighting"
-                negative_prompt = f"blurry, low quality, distorted, bad architecture, deformed, 3d render{negative_tag}"
-        else: # Selfie / Person request
-            if is_flux:
-                positive_prompt = f"A casual photorealistic selfie of a {gender_desc}, {clean_prompt}"
-                negative_prompt = f"blurry, low quality, distorted, deformed{negative_tag}"
-            else:
-                positive_prompt = f"masterpiece, best quality, photorealistic selfie of {subject_tag}, {clean_prompt}, 8k, detailed skin texture, sharp focus, natural lighting"
-                negative_prompt = f"blurry, low quality, distorted, extra limbs, bad face, deformed, bad hands, cartoon, 3d render{negative_tag}"
+                prefix = f"photo of a beautiful woman{f' named {companion_name}' if companion_name else ''}"
+            if prefix.lower() not in prompt.lower():
+                prompt_parts.append(prefix)
+                
+        prompt_parts.append(prompt)
+        positive_prompt = ", ".join(prompt_parts)
+        negative_prompt = "blurry, low quality, distorted, watermark, signature, bad anatomy, deformed"
 
         # Check if the model is registered under ComfyUI UNETLoader or CheckpointLoaderSimple
-        is_unet = False
+        use_unet_loader = False
         try:
             resp = httpx.get(f"{cls.COMFYUI_URL}/object_info/UNETLoader", timeout=2.0)
             if resp.status_code == 200:
                 info = resp.json()
                 unet_list = info.get("UNETLoader", {}).get("input", {}).get("required", {}).get("unet_name", [[]])[0]
                 if checkpoint_name in unet_list:
-                    is_unet = True
+                    use_unet_loader = True
         except Exception:
-            is_unet = checkpoint_name.lower() == "flux-2-klein-4b.safetensors"
+            pass
+
+        ckpt_lower = checkpoint_name.lower()
+        is_unet = use_unet_loader or any(kw in ckpt_lower for kw in [".gguf", "klein", "unet", "z-image", "fp8", "swarmui", "turbo", "flux"])
+
+        is_flux2 = "flux-2" in ckpt_lower or "klein" in ckpt_lower or "z-image" in ckpt_lower or "lumina" in ckpt_lower
+        is_flux1 = "flux" in ckpt_lower and not is_flux2
+        is_flux = is_flux1 or is_flux2 or is_unet
 
         if "klein" in checkpoint_name.lower():
-            klein_ckpt = "flux-2-klein-4b.safetensors"
+            klein_ckpt = checkpoint_name
             model_src = ["4", 0]
             clip_src = ["11", 0]
 
             workflow = {
                 "4": {
-                    "inputs": {"unet_name": klein_ckpt, "weight_dtype": "default"},
-                    "class_type": "UNETLoader"
+                    "inputs": {"unet_name": klein_ckpt, "weight_dtype": "default"} if use_unet_loader else {"ckpt_name": klein_ckpt},
+                    "class_type": "UNETLoader" if use_unet_loader else "CheckpointLoaderSimple"
                 },
                 "10": {
                     "inputs": {"vae_name": "flux2-vae.safetensors"},
@@ -206,7 +190,7 @@ class VisualPipelineService:
 
         if is_flux:
             # Build loader node 4 dynamically based on whether model is registered in UNETLoader or CheckpointLoaderSimple
-            if is_unet:
+            if use_unet_loader:
                 model_node = {
                     "inputs": {
                         "unet_name": checkpoint_name,
@@ -223,14 +207,15 @@ class VisualPipelineService:
                 }
 
             if is_flux2:
+                clip_type_val = "lumina2" if ("z-image" in ckpt_lower or "lumina" in ckpt_lower) else "flux2"
                 clip_node = {
                     "inputs": {
                         "clip_name": "qwen_3_4b.safetensors",
-                        "type": "flux2"
+                        "type": clip_type_val
                     },
                     "class_type": "CLIPLoader"
                 }
-                vae_name = "flux2-vae.safetensors"
+                vae_name = "ae.safetensors" if ("z-image" in ckpt_lower or "lumina" in ckpt_lower) else "flux2-vae.safetensors"
             else:
                 clip_node = {
                     "inputs": {
@@ -266,7 +251,7 @@ class VisualPipelineService:
                         "height": height,
                         "batch_size": 1
                     },
-                    "class_type": "EmptyFlux2LatentImage" if is_flux2 else "EmptyLatentImage"
+                    "class_type": "EmptyLatentImage"
                 },
                 "6": {
                     "inputs": {
@@ -377,7 +362,8 @@ class VisualPipelineService:
         cls, 
         prompt: str, 
         companion_id: str, 
-        reference_face_url: Optional[str] = None
+        reference_face_url: Optional[str] = None,
+        max_wait_seconds: float = 180.0
     ) -> Dict[str, Any]:
         """
         Submits image generation request to local ComfyUI API, waits for completion,
@@ -406,6 +392,15 @@ class VisualPipelineService:
             if (" man " in f" {desc} " or " male " in f" {desc} ") and not ("woman" in desc or "female" in desc):
                 comp_gender = "male"
 
+            appearance_text = companion_data.get("appearance_description") or (companion_data.get("traits") or {}).get("physical_appearance")
+            if not appearance_text and companion_data.get("system_prompt"):
+                from app.services.prompt_builder import PromptBuilderService
+                appearance_text = PromptBuilderService.extract_physical_descriptors(companion_data.get("system_prompt"))
+            if appearance_text and appearance_text.strip():
+                clean_app = appearance_text.strip()
+                if clean_app.lower() not in prompt.lower():
+                    prompt = f"{clean_app}, {prompt}"
+
         workflow = cls.prepare_comfy_workflow(
             prompt=prompt,
             checkpoint_name=ckpt,
@@ -420,7 +415,7 @@ class VisualPipelineService:
 
         try:
             # 1. Post prompt to ComfyUI
-            resp = httpx.post(f"{cls.COMFYUI_URL}/prompt", json={"prompt": workflow}, timeout=10.0)
+            resp = httpx.post(f"{cls.COMFYUI_URL}/prompt", json={"prompt": workflow}, timeout=5.0)
             if resp.status_code != 200:
                 logger.error(f"ComfyUI prompt submission failed: {resp.text}")
                 return cls._fallback_response(prompt, companion_id)
@@ -434,7 +429,7 @@ class VisualPipelineService:
             start_time = time.time()
             filename = None
 
-            while time.time() - start_time < 180.0:
+            while time.time() - start_time < max_wait_seconds:
                 try:
                     history_resp = httpx.get(f"{cls.COMFYUI_URL}/history/{prompt_id}", timeout=5.0)
                     if history_resp.status_code == 200:
@@ -451,7 +446,7 @@ class VisualPipelineService:
                                 break
                 except Exception:
                     pass
-                time.sleep(1.5)
+                time.sleep(2.0)
 
             # 3. Retrieve image bytes from local disk or ComfyUI view endpoint
             if filename:
@@ -500,6 +495,15 @@ class VisualPipelineService:
             if "male" in custom_desc.lower() and "female" not in custom_desc.lower():
                 comp_gender = "male"
 
+            appearance_text = profile.get("appearance_description") or (profile.get("traits") or {}).get("physical_appearance")
+            if not appearance_text and custom_desc:
+                from app.services.prompt_builder import PromptBuilderService
+                appearance_text = PromptBuilderService.extract_physical_descriptors(custom_desc)
+            if appearance_text and appearance_text.strip():
+                clean_app = appearance_text.strip()
+                if clean_app.lower() not in prompt.lower():
+                    prompt = f"{clean_app}, {prompt}"
+
         from app.services.settings_service import SettingsService
         active_cfg = await asyncio.to_thread(SettingsService.get_settings)
         ckpt = active_cfg.get("image_model") or "flux1-dev-fp8.safetensors"
@@ -543,7 +547,19 @@ class VisualPipelineService:
                         if history_resp.status_code == 200:
                             history_data = history_resp.json()
                             if prompt_id in history_data:
-                                outputs = history_data[prompt_id].get("outputs", {})
+                                prompt_entry = history_data[prompt_id]
+                                status_info = prompt_entry.get("status", {})
+                                if status_info.get("status_str") == "error":
+                                    messages = status_info.get("messages", [])
+                                    err_msg = "ComfyUI execution error"
+                                    for m in messages:
+                                        if isinstance(m, list) and len(m) > 1 and m[0] == "execution_error":
+                                            err_msg = m[1].get("exception_message") or err_msg
+                                            break
+                                    logger.error(f"ComfyUI prompt {prompt_id} failed: {err_msg}")
+                                    break
+
+                                outputs = prompt_entry.get("outputs", {})
                                 for node_id, node_output in outputs.items():
                                     images = node_output.get("images", [])
                                     if images:
@@ -552,8 +568,8 @@ class VisualPipelineService:
                                         break
                                 if filename:
                                     break
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Error checking ComfyUI history: {e}")
                     await asyncio.sleep(1.0)
 
             if filename:

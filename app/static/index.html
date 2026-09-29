@@ -61,8 +61,8 @@
                     <span id="savedCountBadge" class="text-xs font-semibold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md">0 Characters</span>
                 </div>
                 
-                <div id="savedCompanionsList" class="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1">
-                    <div class="text-xs text-slate-400 italic py-2">No saved characters yet. Create one below!</div>
+                <div id="savedCompanionsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                    <div class="text-xs text-slate-400 italic py-2 col-span-2">No saved characters yet. Create one below!</div>
                 </div>
             </div>
 
@@ -125,6 +125,15 @@
                             <option value="verbose">📖 Detailed & Verbose</option>
                         </select>
                     </div>
+                </div>
+
+                <!-- Input Field: Appearance Description -->
+                <div>
+                    <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 block flex items-center justify-between">
+                        <span>🖼️ Physical Appearance Description</span>
+                        <span class="text-[10px] text-pink-400 font-normal lowercase">(used for initial selfie & avatar generation)</span>
+                    </label>
+                    <textarea id="appearanceDesc" rows="2" placeholder="e.g. Long wavy blonde hair, bright blue eyes, athletic build, wearing a leather jacket and silver necklace..." class="w-full rounded-xl p-3 text-sm focus:outline-none"></textarea>
                 </div>
 
                 <!-- Mode Switcher Tabs -->
@@ -325,6 +334,12 @@
                     <select id="settingLlmModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
                 </div>
 
+                <!-- Text Generation LoRA Selection -->
+                <div>
+                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Text Generation LoRA (LLM Adapter / Fine-Tune)</label>
+                    <select id="settingLlmLora" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                </div>
+
                 <!-- Image Generation Model Selection -->
                 <div>
                     <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active Image Generation Model (Checkpoints & Diffusion)</label>
@@ -474,20 +489,22 @@
             }
 
             if (activeImageUrl) {
-                photoBtn.innerHTML = "<span>📸</span> View Photo";
                 renderImageContainer(activeImageUrl, imagePrompt);
+                imgContainer.classList.remove("hidden");
+                photoBtn.innerHTML = "<span>🙈</span> Hide Photo";
             } else {
                 photoBtn.innerHTML = "<span>📸</span> View Photo";
             }
 
             photoBtn.onclick = async () => {
                 if (!activeImageUrl) {
+                    photoBtn.disabled = true;
                     photoBtn.innerHTML = "<span>📸</span> Rendering Photo...";
                     imgContainer.classList.remove("hidden");
                     imgContainer.innerHTML = `
                         <div class="font-bold flex items-center gap-1">📸 Visual Pipeline Triggered</div>
                         <div class="text-slate-400 italic">Prompt: "${imagePrompt || 'Companion Photo'}"</div>
-                        <div class="bg-pink-500/20 p-2 text-center rounded-lg font-mono text-pink-300 text-xs">ComfyUI Pipeline Rendering...</div>
+                        <div class="bg-pink-500/20 p-2 text-center rounded-lg font-mono text-pink-300 text-xs animate-pulse">ComfyUI Pipeline Rendering... Please wait.</div>
                     `;
                     try {
                         const cid = companionId || currentCompanionId;
@@ -500,6 +517,7 @@
                         if (resData.image_url) {
                             activeImageUrl = resData.image_url;
                             renderImageContainer(activeImageUrl, resData.prompt_used || imagePrompt);
+                            imgContainer.classList.remove("hidden");
                             photoBtn.innerHTML = "<span>🙈</span> Hide Photo";
                         } else {
                             imgContainer.innerHTML = `<div class="text-red-400">Photo generation pending or ComfyUI offline.</div>`;
@@ -508,6 +526,8 @@
                     } catch (err) {
                         imgContainer.innerHTML = `<div class="text-red-400">Error rendering photo: ${err.message}</div>`;
                         photoBtn.innerHTML = "<span>📸</span> View Photo";
+                    } finally {
+                        photoBtn.disabled = false;
                     }
                     return;
                 }
@@ -544,26 +564,31 @@
                 document.getElementById("savedCountBadge").innerText = `${allSavedCompanions.length} Character${allSavedCompanions.length === 1 ? '' : 's'}`;
 
                 if (!allSavedCompanions.length) {
-                    listEl.innerHTML = `<div class="text-xs text-slate-400 italic py-2">No saved characters yet. Create one below!</div>`;
+                    listEl.innerHTML = `<div class="text-xs text-slate-400 italic py-2 col-span-2">No saved characters yet. Create one below!</div>`;
                     return;
                 }
 
-                listEl.innerHTML = allSavedCompanions.map(c => `
-                    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 p-2.5 rounded-xl hover:border-indigo-500/50 transition cursor-pointer group" onclick="loadCompanion('${c.companion_id}')">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 rounded-lg bg-indigo-600/80 flex items-center justify-center font-bold text-white text-xs">
-                                ${c.name[0].toUpperCase()}
+                listEl.innerHTML = allSavedCompanions.map(c => {
+                    const avatarHtml = c.avatar_image_url 
+                        ? `<img src="${c.avatar_image_url}" class="w-12 h-12 rounded-xl object-cover border border-slate-700 shadow flex-shrink-0" alt="${c.name}" />`
+                        : `<div class="w-12 h-12 rounded-xl bg-indigo-600/80 flex items-center justify-center font-bold text-white text-base flex-shrink-0 shadow">${c.name[0].toUpperCase()}</div>`;
+                    
+                    return `
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 hover:border-indigo-500/60 transition cursor-pointer group flex items-start justify-between gap-2 shadow" onclick="loadCompanion('${c.companion_id}')">
+                            <div class="flex items-start gap-3 min-w-0">
+                                ${avatarHtml}
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-sm font-bold text-white group-hover:text-indigo-400 transition truncate">${c.name}</div>
+                                    <div class="text-xs text-indigo-300 font-semibold capitalize truncate">${c.companion_type}</div>
+                                    <div class="text-[10px] text-slate-400 truncate mt-0.5">${c.traits.formality || 'casual'}</div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="text-sm font-bold text-white group-hover:text-indigo-400 transition">${c.name}</div>
-                                <div class="text-xs text-slate-400">${c.companion_type.toUpperCase()} • ${c.traits.formality}</div>
-                            </div>
+                            <button onclick="deleteCompanion(event, '${c.companion_id}')" class="text-slate-500 hover:text-red-400 p-1 text-xs transition" title="Delete Character">
+                                ✕
+                            </button>
                         </div>
-                        <button onclick="deleteCompanion(event, '${c.companion_id}')" class="text-slate-500 hover:text-red-400 p-1 text-xs transition" title="Delete Character">
-                            ❌
-                        </button>
-                    </div>
-                `).join("");
+                    `;
+                }).join("");
 
             } catch (err) {
                 console.error("Failed to load saved companions list:", err);
@@ -635,7 +660,11 @@
 
                 renderProfilePanel(profile);
 
-                document.getElementById("chatAvatar").innerText = profile.name[0].toUpperCase();
+                if (profile.avatar_image_url) {
+                    document.getElementById("chatAvatar").innerHTML = `<img src="${profile.avatar_image_url}" class="w-9 h-9 rounded-full object-cover border border-indigo-500 shadow" alt="${profile.name}" />`;
+                } else {
+                    document.getElementById("chatAvatar").innerText = profile.name[0].toUpperCase();
+                }
                 document.getElementById("chatHeaderName").innerText = profile.name;
                 document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${profile.name} (${profile.companion_type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
                 document.getElementById("messageInput").disabled = false;
@@ -998,6 +1027,7 @@
 
             const descText = document.getElementById("personalityDesc").value.trim();
             const textRaw = document.getElementById("rawTexts").value.trim();
+            const appearanceText = document.getElementById("appearanceDesc") ? document.getElementById("appearanceDesc").value.trim() : "";
 
             const formality = document.getElementById("companionFormality").value;
             const responseLength = document.getElementById("companionResponseLength").value;
@@ -1009,6 +1039,10 @@
                 response_length: responseLength
             };
 
+            if (appearanceText) {
+                payload.appearance_description = appearanceText;
+            }
+
             if (activeMode === "desc" && descText) {
                 payload.personality_description = descText;
             } else if (activeMode === "logs" && textRaw) {
@@ -1017,14 +1051,16 @@
                 payload.personality_description = descText;
             } else if (textRaw) {
                 payload.raw_texts = [textRaw];
+            } else if (appearanceText) {
+                // If only appearance description is provided, that's valid as well!
             } else {
-                alert("Please enter a personality description or paste chat logs.");
+                alert("Please enter a personality description, appearance description, or paste chat logs.");
                 return;
             }
 
             const cloneBtn = document.getElementById("cloneBtn");
             cloneBtn.disabled = true;
-            cloneBtn.innerHTML = "Processing...";
+            cloneBtn.innerHTML = "Creating Character & Avatar...";
 
             try {
                 const response = await fetch("/api/v1/clone/ingest", {
@@ -1048,7 +1084,11 @@
                 renderProfilePanel(profile);
                 loadSavedCompanionsList();
 
-                document.getElementById("chatAvatar").innerText = name[0].toUpperCase();
+                if (profile.avatar_image_url) {
+                    document.getElementById("chatAvatar").innerHTML = `<img src="${profile.avatar_image_url}" class="w-9 h-9 rounded-full object-cover border border-indigo-500 shadow" alt="${name}" />`;
+                } else {
+                    document.getElementById("chatAvatar").innerText = name[0].toUpperCase();
+                }
                 document.getElementById("chatHeaderName").innerText = name;
                 document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${name} (${type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
                 document.getElementById("messageInput").disabled = false;
@@ -1150,6 +1190,15 @@
 
                     const data = await response.json();
 
+                    if (!response.ok) {
+                        const errorMsgDiv = document.createElement("div");
+                        errorMsgDiv.className = "bg-red-500/10 border border-red-500/30 p-3 rounded-2xl max-w-xs self-start text-xs text-red-300 font-medium";
+                        errorMsgDiv.innerText = `⚠️ ${data.detail || "Failed to generate reply"}`;
+                        msgsContainer.appendChild(errorMsgDiv);
+                        msgsContainer.scrollTop = msgsContainer.scrollHeight;
+                        return;
+                    }
+
                     chatHistory.push({ role: "user", content: message });
                     chatHistory.push({ role: "assistant", content: data.reply });
 
@@ -1181,6 +1230,11 @@
 
                 } catch (err) {
                     console.error(err);
+                    const errorMsgDiv = document.createElement("div");
+                    errorMsgDiv.className = "bg-red-500/10 border border-red-500/30 p-3 rounded-2xl max-w-xs self-start text-xs text-red-300 font-medium";
+                    errorMsgDiv.innerText = `⚠️ Connection error: ${err.message}`;
+                    msgsContainer.appendChild(errorMsgDiv);
+                    msgsContainer.scrollTop = msgsContainer.scrollHeight;
                 }
             }
         }
@@ -1212,6 +1266,14 @@
                     `<option value="${m.id}" ${m.id === currentData.llm_model ? 'selected' : ''}>${m.label}</option>`
                 ).join("");
 
+                const llmLoraSelect = document.getElementById("settingLlmLora");
+                if (llmLoraSelect) {
+                    const llmLoraList = modelsData.llm_loras || [{ id: "", label: "None (Base Model Only)" }];
+                    llmLoraSelect.innerHTML = llmLoraList.map(l => 
+                        `<option value="${l.id}" ${l.id === currentData.selected_llm_lora ? 'selected' : ''}>${l.label}</option>`
+                    ).join("");
+                }
+
                 const imgSelect = document.getElementById("settingImageModel");
                 imgSelect.innerHTML = modelsData.image_models.map(m => 
                     `<option value="${m.id}" ${m.id === currentData.image_model ? 'selected' : ''}>${m.label}</option>`
@@ -1235,6 +1297,21 @@
                 document.getElementById("settingCfg").value = currentData.image_cfg || 7.0;
                 document.getElementById("settingCfgVal").innerText = currentData.image_cfg || 7.0;
 
+                imgSelect.onchange = () => {
+                    const selectedId = imgSelect.value;
+                    const modelObj = modelsData.image_models.find(m => m.id === selectedId);
+                    if (modelObj && modelObj.recommended) {
+                        document.getElementById("settingSteps").value = modelObj.recommended.image_steps;
+                        document.getElementById("settingStepsVal").innerText = modelObj.recommended.image_steps;
+                        document.getElementById("settingCfg").value = modelObj.recommended.image_cfg;
+                        document.getElementById("settingCfgVal").innerText = modelObj.recommended.image_cfg;
+                        const rVal = `${modelObj.recommended.image_width}x${modelObj.recommended.image_height}`;
+                        if (Array.from(resSelect.options).some(o => o.value === rVal)) {
+                            resSelect.value = rVal;
+                        }
+                    }
+                };
+
                 document.getElementById("settingsModal").classList.remove("hidden");
             } catch (err) {
                 alert("Failed to load model settings: " + err.message);
@@ -1247,6 +1324,7 @@
 
         async function saveSettings() {
             const llmModel = document.getElementById("settingLlmModel").value;
+            const llmLora = document.getElementById("settingLlmLora") ? document.getElementById("settingLlmLora").value : "";
             const imageModel = document.getElementById("settingImageModel").value;
             const loraOptions = Array.from(document.getElementById("settingLora").selectedOptions).map(o => o.value).filter(v => v !== "");
             const lora = loraOptions.join(",");
@@ -1264,6 +1342,7 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         llm_model: llmModel,
+                        selected_llm_lora: llmLora,
                         image_model: imageModel,
                         image_width: width,
                         image_height: height,

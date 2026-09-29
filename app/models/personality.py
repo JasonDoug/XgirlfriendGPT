@@ -10,7 +10,11 @@ class PersonalityIngestionRequest(BaseModel):
     raw_texts: Optional[List[str]] = Field(default=None, description="Optional array of text messages, email snippets, or chat logs.")
     personality_description: Optional[str] = Field(
         default=None, 
-        description="Alternative option: Description of the desired personality traits, tone, hobbies, and speaking style."
+        description="Description of the desired personality traits, tone, hobbies, and speaking style."
+    )
+    appearance_description: Optional[str] = Field(
+        default=None,
+        description="Detailed physical appearance description (e.g. hair color/style, eye color, facial features, outfit, height, skin tone)."
     )
     visual_reference_urls: Optional[List[str]] = Field(default=None, description="Optional URLs of reference images.")
     voice_sample_urls: Optional[List[str]] = Field(default=None, description="Optional audio sample URLs for voice cloning.")
@@ -19,8 +23,9 @@ class PersonalityIngestionRequest(BaseModel):
     def validate_inputs(self):
         has_texts = self.raw_texts and len(self.raw_texts) > 0 and any(t.strip() for t in self.raw_texts)
         has_desc = self.personality_description and self.personality_description.strip()
-        if not has_texts and not has_desc:
-            raise ValueError("Must provide either 'raw_texts' or 'personality_description' to form the companion personality.")
+        has_app = self.appearance_description and self.appearance_description.strip()
+        if not has_texts and not has_desc and not has_app:
+            raise ValueError("Must provide at least one of 'personality_description', 'appearance_description', or 'raw_texts' to form the companion character.")
         return self
 
 class ExtractedTraits(BaseModel):
@@ -43,6 +48,7 @@ class CompanionUpdateRequest(BaseModel):
     response_length: Optional[str] = Field(default=None, description="Updated average response length (short, medium, verbose)")
     name: Optional[str] = Field(default=None, description="Optional updated companion name")
     companion_type: Optional[str] = Field(default=None, description="Optional updated companion type")
+    appearance_description: Optional[str] = Field(default=None, description="Optional updated physical appearance description")
 
 class CompanionProfile(BaseModel):
     companion_id: str
@@ -50,9 +56,10 @@ class CompanionProfile(BaseModel):
     companion_type: str
     traits: ExtractedTraits
     system_prompt: str
+    appearance_description: Optional[str] = None
+    avatar_image_url: Optional[str] = None
     loras: List[Dict[str, Any]] = Field(default_factory=list, description="List of dicts with name, strength, trigger_words")
     voice_id: Optional[str] = None
     voice_provider: Optional[str] = Field(default="cartesia", description="cartesia, elevenlabs, edge_tts")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-

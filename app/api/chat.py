@@ -164,6 +164,7 @@ async def send_chat_message(request: ChatRequest):
         reply=reply_text,
         image_command=image_command,
         audio_url=audio_url,
+        image_url=image_url,
         retrieved_memories=retrieved_memories
     )
 
@@ -191,6 +192,15 @@ async def generate_companion_selfie(companion_id: str, req: Optional[SelfieReque
 
     from app.services.visual_service import VisualService
     result = await VisualService.generate_selfie_async(prompt=final_prompt, companion_id=clean_id)
+    if result and result.get("image_url"):
+        history = StorageService.get_chat_history(clean_id)
+        if history:
+            for turn in reversed(history):
+                if turn.get("role") == "assistant":
+                    turn["image_url"] = result["image_url"]
+                    turn["image_prompt"] = result.get("prompt_used") or final_prompt
+                    StorageService.save_chat_history(clean_id, history)
+                    break
     return result
 
 

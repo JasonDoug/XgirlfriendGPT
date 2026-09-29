@@ -39,6 +39,7 @@ class PersonalityExtractorService:
         cls, 
         raw_texts: Optional[List[str]] = None, 
         personality_description: Optional[str] = None,
+        appearance_description: Optional[str] = None,
         formality_override: Optional[str] = None,
         response_length_override: Optional[str] = None
     ) -> ExtractedTraits:
@@ -53,7 +54,12 @@ class PersonalityExtractorService:
         eff_length = response_length_override if response_length_override and response_length_override != "auto" else "short"
 
         if not text_sources:
-            return ExtractedTraits(formality=eff_formality, average_response_length=eff_length)
+            return ExtractedTraits(
+                formality=eff_formality,
+                average_response_length=eff_length,
+                custom_description=personality_description,
+                physical_appearance=appearance_description
+            )
 
         combined_text = " ".join(text_sources)
         words = re.findall(r'\b\w+\b', combined_text.lower())
@@ -153,5 +159,6 @@ class PersonalityExtractorService:
             sentiment_bias="positive" if "happy" in words or "great" in words or "love" in words or "friendly" in words else "neutral",
             top_topics=top_topics,
             greeting_style=greeting,
-            custom_description=personality_description
+            custom_description=personality_description,
+            physical_appearance=appearance_description
         )

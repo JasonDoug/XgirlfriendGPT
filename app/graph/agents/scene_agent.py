@@ -14,7 +14,7 @@ class SceneAgent:
     """
 
     @classmethod
-    def execute_visual(cls, state: CompanionState) -> CompanionState:
+    async def execute_visual_async(cls, state: CompanionState) -> CompanionState:
         if state.pending_speakers is None:
             state.pending_speakers = []
 
@@ -39,8 +39,8 @@ class SceneAgent:
         if descriptors and descriptors not in final_prompt:
             final_prompt = f"{descriptors}, {final_prompt}"
 
-        # Call visual generation service
-        result = VisualService.generate_selfie(
+        # Call visual generation service asynchronously
+        result = await VisualService.generate_selfie_async(
             prompt=final_prompt,
             companion_id=current_id
         )
@@ -49,3 +49,14 @@ class SceneAgent:
             state.image_url = result.get("image_url")
 
         return state
+
+    @classmethod
+    def execute_visual(cls, state: CompanionState) -> CompanionState:
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                return loop.run_until_complete(cls.execute_visual_async(state))
+        except Exception:
+            pass
+        return asyncio.run(cls.execute_visual_async(state))
