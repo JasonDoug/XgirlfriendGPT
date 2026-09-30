@@ -14,7 +14,9 @@ services:
       - DEFAULT_MODEL=${DEFAULT_MODEL:-R4C3R/qwen3-8b-heretic:q8_0}
       - QDRANT_HOST=localhost
       - QDRANT_COLLECTION=companion_memories
-      - FASTEMBED_CACHE_PATH=/tmp/fastembed_cache
+      - FASTEMBED_CACHE_PATH=/tmp/fastembed_container_cache
+      - HF_HOME=/tmp/hf_container_cache
+      - XDG_CACHE_HOME=/tmp/fastembed_container_cache
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
