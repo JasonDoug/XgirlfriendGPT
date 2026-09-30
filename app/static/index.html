@@ -335,49 +335,56 @@
             </div>
 
             <div class="flex flex-col gap-4 text-xs">
-                <!-- LLM Model Selection -->
-                <div>
-                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active LLM Model (Text & Chat)</label>
-                    <select id="settingLlmModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
-                </div>
-
-                <!-- Text Generation LoRA Selection -->
-                <div>
-                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Text Generation LoRA (LLM Adapter / Fine-Tune)</label>
-                    <select id="settingLlmLora" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
-                </div>
-
-                <!-- Image Generation Model Selection -->
-                <div>
-                    <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active Image Generation Model (Checkpoints & Diffusion)</label>
-                    <select id="settingImageModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
-                </div>
-
-                <!-- Image Parameters Grid -->
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Section 1: LLM & Text Generation Settings -->
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+                    <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                        <span>🧠</span> LLM & Text Generation Settings
+                    </h4>
                     <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Resolution</label>
-                        <select id="settingResolution" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white">
-                            <option value="896x1152">896x1152 (Portrait Selfie)</option>
-                            <option value="1024x1024">1024x1024 (Square)</option>
-                            <option value="1152x896">1152x896 (Landscape)</option>
-                            <option value="512x512">512x512 (Fast Draft)</option>
-                        </select>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active LLM Model (Text & Chat)</label>
+                        <select id="settingLlmModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-950 border border-slate-800 text-white"></select>
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">LoRA Style Overlays <span class="text-slate-500 font-normal lowercase">(hold Ctrl to select multiple)</span></label>
-                        <select id="settingLora" multiple size="3" class="w-full rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none bg-slate-900 border border-slate-800 text-white"></select>
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">LLM Text Generation LoRA (Adapter / Fine-Tune)</label>
+                        <select id="settingLlmLora" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-950 border border-slate-800 text-white"></select>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Section 2: Image Generation Settings -->
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
+                    <h4 class="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
+                        <span>🖼️</span> Image Generation Settings
+                    </h4>
                     <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Sampling Steps: <span id="settingStepsVal" class="text-indigo-400">20</span></label>
-                        <input id="settingSteps" type="range" min="1" max="50" value="20" oninput="document.getElementById('settingStepsVal').innerText = this.value" class="w-full">
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Active Image Generation Model (Checkpoints & Diffusion)</label>
+                        <select id="settingImageModel" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-950 border border-slate-800 text-white"></select>
                     </div>
+
                     <div>
-                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">CFG Scale: <span id="settingCfgVal" class="text-pink-400">7.0</span></label>
-                        <input id="settingCfg" type="range" min="1.0" max="15.0" step="0.5" value="7.0" oninput="document.getElementById('settingCfgVal').innerText = this.value" class="w-full">
+                        <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Image Generation LoRAs (Visual Style Overlays) <span class="text-slate-500 font-normal lowercase">(hold Ctrl to select multiple)</span></label>
+                        <select id="settingLora" multiple size="3" class="w-full rounded-xl px-2 py-1.5 text-xs font-medium focus:outline-none bg-slate-950 border border-slate-800 text-white"></select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mt-1">
+                        <div>
+                            <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Resolution</label>
+                            <select id="settingResolution" class="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none bg-slate-950 border border-slate-800 text-white">
+                                <option value="896x1152">896x1152 (Portrait Selfie)</option>
+                                <option value="1024x1024">1024x1024 (Square)</option>
+                                <option value="1152x896">1152x896 (Landscape)</option>
+                                <option value="512x512">512x512 (Fast Draft)</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <div>
+                                <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">Sampling Steps: <span id="settingStepsVal" class="text-indigo-400">20</span></label>
+                                <input id="settingSteps" type="range" min="1" max="50" value="20" oninput="document.getElementById('settingStepsVal').innerText = this.value" class="w-full">
+                            </div>
+                            <div>
+                                <label class="font-semibold text-slate-300 uppercase tracking-wider mb-1 block">CFG Scale: <span id="settingCfgVal" class="text-pink-400">7.0</span></label>
+                                <input id="settingCfg" type="range" min="1.0" max="15.0" step="0.5" value="7.0" oninput="document.getElementById('settingCfgVal').innerText = this.value" class="w-full">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
