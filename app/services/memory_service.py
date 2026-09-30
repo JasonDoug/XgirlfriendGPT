@@ -15,17 +15,35 @@ _fastembed_model = None
 def get_fastembed_model():
     global _fastembed_model
     if _fastembed_model is None:
+        cache_dir = os.environ.get("FASTEMBED_CACHE_PATH", "/tmp/fastembed_cache")
         try:
-            cache_dir = os.environ.get("FASTEMBED_CACHE_PATH", "/tmp/fastembed_cache")
             os.makedirs(cache_dir, exist_ok=True)
             try:
                 os.chmod(cache_dir, 0o777)
+                for root, dirs, files in os.walk(cache_dir):
+                    for d in dirs:
+                        try:
+                            os.chmod(os.path.join(root, d), 0o777)
+                        except Exception:
+                            pass
+                    for f in files:
+                        try:
+                            os.chmod(os.path.join(root, f), 0o666)
+                        except Exception:
+                            pass
             except Exception:
                 pass
             from fastembed import TextEmbedding
             _fastembed_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", cache_dir=cache_dir)
         except Exception as e:
-            logger.warning(f"FastEmbed initialization warning: {e}")
+            logger.warning(f"FastEmbed cache warning on {cache_dir}: {e}. Attempting isolated app cache...")
+            try:
+                app_cache_dir = "/tmp/fastembed_app_isolated"
+                os.makedirs(app_cache_dir, exist_ok=True)
+                from fastembed import TextEmbedding
+                _fastembed_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", cache_dir=app_cache_dir)
+            except Exception as ex:
+                logger.error(f"FastEmbed isolated fallback initialization error: {ex}")
     return _fastembed_model
 
 class MemoryService:
