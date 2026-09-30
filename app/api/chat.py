@@ -33,13 +33,25 @@ def get_chat_history(companion_id: str):
     return StorageService.get_chat_history(clean_id)
 
 @router.delete("/history/{companion_id}")
-def clear_chat_history(companion_id: str):
+def clear_chat_history(companion_id: str, clear_memories: bool = True):
     """
-    Clears all stored multi-turn chat history for a specific companion.
+    Clears stored multi-turn chat history for a specific companion.
+    Optionally clears long-term vector memories in Qdrant (defaults to True).
     """
     clean_id = validate_companion_id(companion_id)
     StorageService.clear_chat_history(clean_id)
-    return {"status": "success", "companion_id": clean_id, "message": "Chat history cleared successfully"}
+    if clear_memories:
+        try:
+            mem_service = MemoryService.get_instance()
+            mem_service.clear_memories(clean_id)
+        except Exception as e:
+            logger.warning(f"Error clearing vector memory for {clean_id}: {e}")
+    return {
+        "status": "success", 
+        "companion_id": clean_id, 
+        "clear_memories": clear_memories,
+        "message": f"Chat history{' and long-term vector memories' if clear_memories else ''} cleared successfully"
+    }
 
 @router.post("/message", response_model=ChatResponse, dependencies=[Depends(check_chat_rate_limit)])
 async def send_chat_message(request: ChatRequest):

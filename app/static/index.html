@@ -1387,20 +1387,20 @@
             if (!currentCompanionId && !currentRoomId) return;
 
             const targetName = currentCompanionId ? currentCompanionName : (currentRoomData ? currentRoomData.name : "Chat");
-            if (!confirm(`Are you sure you want to clear chat history for "${targetName}"?\nYour character profile and settings will remain intact.`)) {
-                return;
-            }
+            
+            const confirmed = confirm(`Are you sure you want to clear chat history for "${targetName}"?\n\nThis will wipe recent chat turns and long-term vector memories so you get a complete fresh start (Character profile settings will be kept).`);
+            if (!confirmed) return;
 
             try {
                 if (currentCompanionId) {
-                    const res = await fetch(`/api/v1/chat/history/${currentCompanionId}`, { method: "DELETE" });
+                    const res = await fetch(`/api/v1/chat/history/${currentCompanionId}?clear_memories=true`, { method: "DELETE" });
                     if (!res.ok) throw new Error("Failed to clear chat history");
 
                     chatHistory = [];
                     const msgsContainer = document.getElementById("messagesContainer");
                     msgsContainer.innerHTML = `
                         <div class="text-center text-xs text-indigo-400 my-4 bg-indigo-500/10 p-3 rounded-2xl border border-indigo-500/20 font-medium">
-                            🧹 Chat history cleared for "${currentCompanionName}". Ready for a fresh start!
+                            🧹 Chat history & long-term vector memories cleared for "${currentCompanionName}". Ready for a fresh start!
                         </div>
                     `;
                 } else if (currentRoomId) {

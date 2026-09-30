@@ -167,6 +167,27 @@ class MemoryService:
         except Exception:
             return []
 
+    def clear_memories(self, companion_id: str):
+        """
+        Deletes stored vector memories for a specific companion from Qdrant.
+        """
+        try:
+            from qdrant_client.models import Filter, FieldCondition, MatchValue
+            self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=Filter(
+                    must=[
+                        FieldCondition(
+                            key="companion_id",
+                            match=MatchValue(value=companion_id)
+                        )
+                    ]
+                )
+            )
+            logger.info(f"Cleared vector memories for companion '{companion_id}'")
+        except Exception as e:
+            logger.warning(f"Could not clear Qdrant memories for companion '{companion_id}': {e}")
+
     def summarize_conversation(self, history: List[Dict[str, str]]) -> str:
         """
         Generates a concise summary buffer of recent chat history for context compression.
