@@ -255,13 +255,13 @@ class LLMService:
         payload = {
             "model": selected_model,
             "messages": messages,
-            "temperature": 0.85,
+            "temperature": 0.7,
             "top_p": 0.9,
-            "presence_penalty": 0.3,
-            "frequency_penalty": 0.3,
             "max_tokens": max_tokens,
             "options": {
-                "repeat_penalty": 1.15,
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "repeat_penalty": 1.1,
                 "num_ctx": 4096
             }
         }
@@ -346,13 +346,13 @@ class LLMService:
         payload = {
             "model": selected_model,
             "messages": messages,
-            "temperature": 0.85,
+            "temperature": 0.7,
             "top_p": 0.9,
-            "presence_penalty": 0.3,
-            "frequency_penalty": 0.3,
             "max_tokens": max_tokens,
             "options": {
-                "repeat_penalty": 1.15,
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "repeat_penalty": 1.1,
                 "num_ctx": 4096
             }
         }
