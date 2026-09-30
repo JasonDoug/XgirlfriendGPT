@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from app.services.settings_service import SettingsService
@@ -14,6 +14,9 @@ class SettingsUpdateRequest(BaseModel):
     image_cfg: float = Field(default=7.0)
     selected_lora: str = Field(default="")
     selected_llm_lora: str = Field(default="")
+    temperature: Optional[float] = Field(default=0.7)
+    top_p: Optional[float] = Field(default=0.9)
+    repeat_penalty: Optional[float] = Field(default=1.1)
 
 @router.get("", response_model=Dict[str, Any])
 def get_current_settings():

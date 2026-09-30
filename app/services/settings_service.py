@@ -17,10 +17,46 @@ DEFAULT_SETTINGS = {
     "image_steps": 20,
     "image_cfg": 7.0,
     "selected_lora": "",
-    "selected_llm_lora": ""
+    "selected_llm_lora": "",
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "repeat_penalty": 1.1,
+    "model_profiles": {}
 }
 
 class SettingsService:
+    @classmethod
+    def get_recommended_llm_defaults(cls, llm_model: str) -> Dict[str, Any]:
+        """
+        Returns tailored LLM sampling parameters (temperature, top_p, repeat_penalty)
+        based on model family and architectural requirements.
+        """
+        m_lower = llm_model.lower()
+        if any(kw in m_lower for kw in ["flash", "stablelm", "3b", "2b", "mini", "granite"]):
+            return {
+                "temperature": 0.65,
+                "top_p": 0.90,
+                "repeat_penalty": 1.10
+            }
+        elif any(kw in m_lower for kw in ["r1", "deepseek", "thinking", "reasoning", "heretic"]):
+            return {
+                "temperature": 0.60,
+                "top_p": 0.95,
+                "repeat_penalty": 1.15
+            }
+        elif any(kw in m_lower for kw in ["stheno", "roleplay", "rp", "nsfw", "uncensored", "luna"]):
+            return {
+                "temperature": 0.75,
+                "top_p": 0.90,
+                "repeat_penalty": 1.12
+            }
+        else: # Standard Llama / Qwen / Mistral
+            return {
+                "temperature": 0.70,
+                "top_p": 0.90,
+                "repeat_penalty": 1.10
+            }
+
     @classmethod
     def get_recommended_model_defaults(cls, image_model: str) -> Dict[str, Any]:
         """
@@ -92,12 +128,38 @@ class SettingsService:
     @classmethod
     def update_settings(cls, new_settings: Dict[str, Any]) -> Dict[str, Any]:
         current = cls.get_settings()
-        
+        profiles = current.get("model_profiles", {})
+
+        new_llm = new_settings.get("llm_model")
+        current_llm = current.get("llm_model")
+
+        # Auto-apply per-model profile or recommended defaults when LLM model changes
+        if new_llm and new_llm != current_llm:
+            if new_llm in profiles:
+                prof = profiles[new_llm]
+                new_settings["temperature"] = prof.get("temperature", 0.7)
+                new_settings["top_p"] = prof.get("top_p", 0.9)
+                new_settings["repeat_penalty"] = prof.get("repeat_penalty", 1.1)
+            else:
+                defaults = cls.get_recommended_llm_defaults(new_llm)
+                new_settings["temperature"] = defaults["temperature"]
+                new_settings["top_p"] = defaults["top_p"]
+                new_settings["repeat_penalty"] = defaults["repeat_penalty"]
+
+        # Cache/Save custom parameters for active LLM model into model_profiles
+        active_llm = new_llm or current_llm
+        if active_llm:
+            profiles[active_llm] = {
+                "temperature": new_settings.get("temperature", current.get("temperature", 0.7)),
+                "top_p": new_settings.get("top_p", current.get("top_p", 0.9)),
+                "repeat_penalty": new_settings.get("repeat_penalty", current.get("repeat_penalty", 1.1))
+            }
+            new_settings["model_profiles"] = profiles
+
         # If image model changed, auto-tailor steps, CFG, and resolution for the selected model
         new_model = new_settings.get("image_model")
         if new_model and new_model != current.get("image_model"):
             defaults = cls.get_recommended_model_defaults(new_model)
-            # Apply recommended defaults when model selection changes
             new_settings["image_steps"] = defaults["image_steps"]
             new_settings["image_cfg"] = defaults["image_cfg"]
             new_settings["image_width"] = defaults["image_width"]

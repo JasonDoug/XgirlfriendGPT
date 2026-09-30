@@ -252,16 +252,20 @@ class LLMService:
         else:
             max_tokens = 400
 
+        active_temp = float(active_settings.get("temperature", 0.7))
+        active_top_p = float(active_settings.get("top_p", 0.9))
+        active_repeat_penalty = float(active_settings.get("repeat_penalty", 1.1))
+
         payload = {
             "model": selected_model,
             "messages": messages,
-            "temperature": 0.7,
-            "top_p": 0.9,
+            "temperature": active_temp,
+            "top_p": active_top_p,
             "max_tokens": max_tokens,
             "options": {
-                "temperature": 0.7,
-                "top_p": 0.9,
-                "repeat_penalty": 1.1,
+                "temperature": active_temp,
+                "top_p": active_top_p,
+                "repeat_penalty": active_repeat_penalty,
                 "num_ctx": 4096
             }
         }
@@ -343,16 +347,20 @@ class LLMService:
         else:
             max_tokens = 400
 
+        active_temp = float(active_settings.get("temperature", 0.7))
+        active_top_p = float(active_settings.get("top_p", 0.9))
+        active_repeat_penalty = float(active_settings.get("repeat_penalty", 1.1))
+
         payload = {
             "model": selected_model,
             "messages": messages,
-            "temperature": 0.7,
-            "top_p": 0.9,
+            "temperature": active_temp,
+            "top_p": active_top_p,
             "max_tokens": max_tokens,
             "options": {
-                "temperature": 0.7,
-                "top_p": 0.9,
-                "repeat_penalty": 1.1,
+                "temperature": active_temp,
+                "top_p": active_top_p,
+                "repeat_penalty": active_repeat_penalty,
                 "num_ctx": 4096
             }
         }
