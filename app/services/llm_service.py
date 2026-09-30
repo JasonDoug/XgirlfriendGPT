@@ -155,10 +155,15 @@ class LLMService:
         """
         Strips internal reasoning blocks like <think>...</think> produced by thinking models.
         """
+        if not text:
+            return ""
+        # 1. Remove complete <think>...</think> blocks
         cleaned = re.sub(r'<think>[\s\S]*?</think>', '', text, flags=re.IGNORECASE).strip()
+        # 2. Remove any remaining unclosed <think>... blocks to end of text
         cleaned = re.sub(r'<think>[\s\S]*$', '', cleaned, flags=re.IGNORECASE).strip()
-        cleaned = re.sub(r'^<think>[\s\S]*', '', cleaned, flags=re.IGNORECASE).strip()
-        return cleaned if cleaned else text.strip()
+        # 3. Remove orphaned </think> closing tags
+        cleaned = re.sub(r'^[\s\S]*?</think>', '', cleaned, flags=re.IGNORECASE).strip()
+        return cleaned
 
     @classmethod
     def _build_headers(cls) -> Dict[str, str]:

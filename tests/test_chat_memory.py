@@ -35,3 +35,12 @@ def test_llm_tool_call_extraction():
     assert img_cmd is not None
     assert img_cmd.generate_image is True
     assert "cozy room" in img_cmd.prompt
+
+def test_strip_thinking_tags_handling():
+    # Test unclosed <think> tag
+    unclosed = "<think>\nOkay, let me figure this out...\nI should reply nicely.\n"
+    assert LLMService._strip_thinking_tags(unclosed) == ""
+
+    # Test complete <think> tag with response text
+    with_response = "<think>\nReasoning here...\n</think>\nHey babe! What are you up to?"
+    assert LLMService._strip_thinking_tags(with_response) == "Hey babe! What are you up to?"
