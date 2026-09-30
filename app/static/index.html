@@ -244,6 +244,10 @@
                     <label class="text-xs text-slate-300 flex items-center gap-1 cursor-pointer">
                         <input id="toggleMemory" type="checkbox" checked class="rounded bg-slate-900 border-slate-700 text-indigo-500 focus:ring-0"> Vector Memory
                     </label>
+
+                    <button id="clearChatBtn" onclick="clearChatHistory()" disabled class="text-xs bg-slate-900/90 text-slate-300 font-semibold px-2.5 py-1 rounded-lg border border-slate-800 hover:border-red-500/50 hover:text-red-400 transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed" title="Clear chat history for the active companion or room">
+                        <span>🧹</span> Clear Chat
+                    </button>
                 </div>
             </div>
 
@@ -683,6 +687,7 @@
                 document.getElementById("chatHeaderStatus").innerText = `Active Persona: ${profile.name} (${profile.companion_type.toUpperCase()}) | Tone: ${profile.traits.formality}`;
                 document.getElementById("messageInput").disabled = false;
                 document.getElementById("sendBtn").disabled = false;
+                if (document.getElementById("clearChatBtn")) document.getElementById("clearChatBtn").disabled = false;
 
                 const msgsContainer = document.getElementById("messagesContainer");
                 msgsContainer.innerHTML = `
@@ -744,6 +749,7 @@
 
                 document.getElementById("messageInput").disabled = false;
                 document.getElementById("sendBtn").disabled = false;
+                if (document.getElementById("clearChatBtn")) document.getElementById("clearChatBtn").disabled = false;
 
                 // Load Room Conversation History
                 const historyRes = await fetch(`/api/v1/rooms/${roomId}/history`);
@@ -1377,6 +1383,42 @@
             }
         }
 
+        async function clearChatHistory() {
+            if (!currentCompanionId && !currentRoomId) return;
+
+            const targetName = currentCompanionId ? currentCompanionName : (currentRoomData ? currentRoomData.name : "Chat");
+            if (!confirm(`Are you sure you want to clear chat history for "${targetName}"?\nYour character profile and settings will remain intact.`)) {
+                return;
+            }
+
+            try {
+                if (currentCompanionId) {
+                    const res = await fetch(`/api/v1/chat/history/${currentCompanionId}`, { method: "DELETE" });
+                    if (!res.ok) throw new Error("Failed to clear chat history");
+
+                    chatHistory = [];
+                    const msgsContainer = document.getElementById("messagesContainer");
+                    msgsContainer.innerHTML = `
+                        <div class="text-center text-xs text-indigo-400 my-4 bg-indigo-500/10 p-3 rounded-2xl border border-indigo-500/20 font-medium">
+                            🧹 Chat history cleared for "${currentCompanionName}". Ready for a fresh start!
+                        </div>
+                    `;
+                } else if (currentRoomId) {
+                    const res = await fetch(`/api/v1/rooms/${currentRoomId}/history`, { method: "DELETE" });
+                    if (!res.ok) throw new Error("Failed to clear room history");
+
+                    const msgsContainer = document.getElementById("messagesContainer");
+                    msgsContainer.innerHTML = `
+                        <div class="text-center text-xs text-purple-400 my-4 bg-purple-500/10 p-3 rounded-2xl border border-purple-500/20 font-medium">
+                            🧹 Group room history cleared for "${currentRoomData.name}". Ready for a fresh start!
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                alert("Error clearing chat history: " + err.message);
+            }
+        }
+
         window.switchMode = switchMode;
         window.clonePersonality = clonePersonality;
         window.loadCompanion = loadCompanion;
@@ -1396,6 +1438,7 @@
         window.openSettingsModal = openSettingsModal;
         window.closeSettingsModal = closeSettingsModal;
         window.saveSettings = saveSettings;
+        window.clearChatHistory = clearChatHistory;
     </script>
 </body>
 </html>

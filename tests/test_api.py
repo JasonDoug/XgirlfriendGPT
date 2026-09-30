@@ -178,3 +178,42 @@ def test_clone_personality_with_appearance_description():
     assert "Short silver hair" in data["system_prompt"]
 
 
+
+
+def test_clear_companion_chat_history():
+    # 1. Ingest companion
+    create_payload = {
+        "companion_name": "Zara",
+        "companion_type": "friend",
+        "personality_description": "A cheerful gamer who loves playing RPGs."
+    }
+    resp = client.post("/api/v1/clone/ingest", json=create_payload)
+    assert resp.status_code == 201
+    comp_id = resp.json()["companion_id"]
+
+    # 2. Add fake chat history
+    from app.services.storage_service import StorageService
+    fake_history = [
+        {"role": "user", "content": "Hey Zara!"},
+        {"role": "assistant", "content": "Hey! Up for some gaming?"}
+    ]
+    StorageService.save_chat_history(comp_id, fake_history)
+
+    # 3. Retrieve history and assert non-empty
+    hist_resp = client.get(f"/api/v1/chat/history/{comp_id}")
+    assert hist_resp.status_code == 200
+    assert len(hist_resp.json()) == 2
+
+    # 4. Clear chat history via DELETE /api/v1/chat/history/{comp_id}
+    del_resp = client.delete(f"/api/v1/chat/history/{comp_id}")
+    assert del_resp.status_code == 200
+    assert del_resp.json()["status"] == "success"
+
+    # 5. Verify history is cleared while companion profile remains intact
+    cleared_hist = client.get(f"/api/v1/chat/history/{comp_id}")
+    assert cleared_hist.status_code == 200
+    assert len(cleared_hist.json()) == 0
+
+    profile_check = client.get(f"/api/v1/clone/profile/{comp_id}")
+    assert profile_check.status_code == 200
+    assert profile_check.json()["name"] == "Zara"

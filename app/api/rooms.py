@@ -116,6 +116,17 @@ def get_room_history(room_id: str, limit: int = 50):
         raise HTTPException(status_code=404, detail="Room not found.")
     return StorageService.get_room_history(room_id, limit=limit)
 
+@router.delete("/{room_id}/history")
+def clear_room_history(room_id: str):
+    """
+    Clears all stored conversation history for a multi-persona group room.
+    """
+    raw_room = StorageService.get_room_by_id(room_id)
+    if not raw_room:
+        raise HTTPException(status_code=404, detail="Room not found.")
+    StorageService.clear_room_history(room_id)
+    return {"status": "success", "room_id": room_id, "message": "Room history cleared successfully"}
+
 @router.post("/message", response_model=RoomMessageResponse)
 async def send_room_message(request: RoomMessageRequest):
     """

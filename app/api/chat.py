@@ -32,6 +32,15 @@ def get_chat_history(companion_id: str):
     clean_id = validate_companion_id(companion_id)
     return StorageService.get_chat_history(clean_id)
 
+@router.delete("/history/{companion_id}")
+def clear_chat_history(companion_id: str):
+    """
+    Clears all stored multi-turn chat history for a specific companion.
+    """
+    clean_id = validate_companion_id(companion_id)
+    StorageService.clear_chat_history(clean_id)
+    return {"status": "success", "companion_id": clean_id, "message": "Chat history cleared successfully"}
+
 @router.post("/message", response_model=ChatResponse, dependencies=[Depends(check_chat_rate_limit)])
 async def send_chat_message(request: ChatRequest):
     """

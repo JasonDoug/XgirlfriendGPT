@@ -135,6 +135,21 @@ class StorageService:
             logger.error(f"Error loading chat history for {companion_id}: {e}")
             return []
 
+    @classmethod
+    def clear_chat_history(cls, companion_id: str) -> bool:
+        cls._ensure_dirs()
+        with cls._file_lock:
+            chat_file = os.path.join(CHATS_DIR, f"{companion_id}.json")
+            if os.path.exists(chat_file):
+                try:
+                    os.remove(chat_file)
+                    return True
+                except Exception as e:
+                    logger.error(f"Error deleting chat history file for {companion_id}: {e}")
+                    cls._atomic_write_json(chat_file, [])
+                    return True
+            return True
+
     # Room Management Methods
     @classmethod
     def save_room(cls, room_dict: Dict[str, Any]):
@@ -204,6 +219,21 @@ class StorageService:
         except Exception as e:
             logger.error(f"Error loading room chat history for {room_id}: {e}")
             return []
+
+    @classmethod
+    def clear_room_history(cls, room_id: str) -> bool:
+        cls._ensure_dirs()
+        with cls._file_lock:
+            room_chat_file = os.path.join(ROOM_CHATS_DIR, f"{room_id}.json")
+            if os.path.exists(room_chat_file):
+                try:
+                    os.remove(room_chat_file)
+                    return True
+                except Exception as e:
+                    logger.error(f"Error removing room chat history for {room_id}: {e}")
+                    cls._atomic_write_json(room_chat_file, [])
+                    return True
+            return True
 
     @classmethod
     def append_room_message(
